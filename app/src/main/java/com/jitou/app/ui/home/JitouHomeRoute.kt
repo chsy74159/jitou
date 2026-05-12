@@ -1,11 +1,16 @@
 package com.jitou.app.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +23,8 @@ import com.jitou.app.ui.appointment.AppointmentRoute
 import com.jitou.app.ui.login.LoginScreen
 import com.jitou.app.ui.login.LoginViewModel
 import com.jitou.app.ui.profile.ProfileRoute
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun JitouHomeRoute() {
@@ -45,75 +52,105 @@ fun JitouHomeRoute() {
     val appointmentHistory = uiState.appointmentHistory
     val isQueueing = uiState.isQueueing
     val friendName = uiState.friendName
-    var screen by remember { mutableStateOf(JitouScreen.Home) }
+    val screens = remember { JitouScreen.primaryScreens() }
+    val pagerState = rememberPagerState(initialPage = JitouScreen.Home.pageIndex) { screens.size }
+    val coroutineScope = rememberCoroutineScope()
+    val screen by remember {
+        derivedStateOf { JitouScreen.fromPageIndex(pagerState.currentPage) }
+    }
+    val navPosition by remember {
+        derivedStateOf {
+            (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                .coerceIn(0f, (screens.size - 1).toFloat())
+        }
+    }
+    val navSelectedScreen by remember {
+        derivedStateOf { JitouScreen.fromPageIndex(navPosition.roundToInt()) }
+    }
     var showRecordDialog by remember { mutableStateOf(false) }
     var showReminderSheet by remember { mutableStateOf(false) }
     var showJoinQueueDialog by remember { mutableStateOf(false) }
     var showCancelQueueDialog by remember { mutableStateOf(false) }
+    val navigateToScreen: (JitouScreen) -> Unit = { destination ->
+        coroutineScope.launch {
+            pagerState.animateScrollToPage(destination.pageIndex)
+        }
+    }
+
+    BackHandler(enabled = screen.systemBackTarget() != null) {
+        screen.systemBackTarget()?.let(navigateToScreen)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        when (screen) {
-            JitouScreen.Home -> {
-                JitouHomeScreen(
-                    records = records,
-                    proposal = proposal,
-                    reminder = reminder,
-                    isQueueing = isQueueing,
-                    friendName = friendName,
-                    onRecordClick = { showRecordDialog = true },
-                    onAppointmentClick = { screen = JitouScreen.Appointment },
-                    onProfileClick = { screen = JitouScreen.Profile },
-                    onQueueClick = {
-                        if (isQueueing) {
-                            showCancelQueueDialog = true
-                        } else {
-                            showJoinQueueDialog = true
-                        }
-                    },
-                    onReminderClick = { showReminderSheet = true },
-                )
-            }
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+        ) { page ->
+            when (screens[page]) {
+                JitouScreen.Home -> {
+                    JitouHomeScreen(
+                        records = records,
+                        proposal = proposal,
+                        reminder = reminder,
+                        isQueueing = isQueueing,
+                        friendName = friendName,
+                        onRecordClick = { showRecordDialog = true },
+                        onAppointmentClick = { navigateToScreen(JitouScreen.Appointment) },
+                        onProfileClick = { navigateToScreen(JitouScreen.Profile) },
+                        onQueueClick = {
+                            if (isQueueing) {
+                                showCancelQueueDialog = true
+                            } else {
+                                showJoinQueueDialog = true
+                            }
+                        },
+                        onReminderClick = { showReminderSheet = true },
+                    )
+                }
 
-            JitouScreen.Appointment -> {
-                AppointmentRoute(
-                    proposal = proposal,
-                    historyItems = appointmentHistory,
-                    averageIntervalDays = HaircutAnalytics.calculate(records).averageIntervalDays,
-                    friendDaysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records) ?: 0,
-                    friendName = friendName,
-                    isFriendQueueing = QueueState.shouldShowFriendQueueNotice(isQueueing, proposal?.status),
-                    onBack = { screen = JitouScreen.Home },
-                    onProposalChange = viewModel::setActiveProposal,
-                    onHistoryAdd = viewModel::addAppointmentHistory,
-                    onCompleteHaircut = { completedDate ->
-                        viewModel.completeFriendHaircut(completedDate)
-                        screen = JitouScreen.Home
-                    },
-                )
-            }
+                JitouScreen.Appointment -> {
+                    AppointmentRoute(
+                        proposal = proposal,
+                        historyItems = appointmentHistory,
+                        averageIntervalDays = HaircutAnalytics.calculate(records).averageIntervalDays,
+                        friendDaysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records) ?: 0,
+                        friendName = friendName,
+                        isFriendQueueing = QueueState.shouldShowFriendQueueNotice(isQueueing, proposal?.status),
+                        onBack = { navigateToScreen(JitouScreen.Home) },
+                        onProposalChange = viewModel::setActiveProposal,
+                        onHistoryAdd = viewModel::addAppointmentHistory,
+                        onCompleteHaircut = { completedDate ->
+                            viewModel.completeFriendHaircut(completedDate)
+                            navigateToScreen(JitouScreen.Home)
+                        },
+                    )
+                }
 
-            JitouScreen.Profile -> {
-                ProfileRoute(
-                    records = records,
-                    nickname = uiState.nickname,
-                    nicknameError = uiState.nicknameError,
-                    onBack = { screen = JitouScreen.Home },
-                    onAddRecord = { showRecordDialog = true },
-                    onReminderClick = { showReminderSheet = true },
-                    onNicknameChange = viewModel::updateNickname,
-                    onRefreshData = viewModel::refreshData,
-                    isRefreshingData = uiState.isRefreshingData,
-                    onLogout = {
-                        screen = JitouScreen.Home
-                        loginViewModel.signOut()
-                    },
-                )
+                JitouScreen.Profile -> {
+                    ProfileRoute(
+                        records = records,
+                        nickname = uiState.nickname,
+                        nicknameError = uiState.nicknameError,
+                        isActive = screen == JitouScreen.Profile,
+                        onBack = { navigateToScreen(JitouScreen.Home) },
+                        onAddRecord = { showRecordDialog = true },
+                        onReminderClick = { showReminderSheet = true },
+                        onNicknameChange = viewModel::updateNickname,
+                        onRefreshData = viewModel::refreshData,
+                        isRefreshingData = uiState.isRefreshingData,
+                        onLogout = {
+                            navigateToScreen(JitouScreen.Home)
+                            loginViewModel.signOut()
+                        },
+                    )
+                }
             }
         }
 
         JitouBottomNav(
-            selected = screen,
-            onSelect = { screen = it },
+            selected = navSelectedScreen,
+            pagePosition = navPosition,
+            onSelect = navigateToScreen,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }

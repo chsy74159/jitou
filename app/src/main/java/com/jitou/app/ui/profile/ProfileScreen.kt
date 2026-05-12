@@ -1,5 +1,6 @@
 package com.jitou.app.ui.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -83,6 +84,7 @@ fun ProfileRoute(
     records: List<HaircutRecord>,
     nickname: String,
     nicknameError: String?,
+    isActive: Boolean = true,
     onBack: () -> Unit,
     onAddRecord: () -> Unit,
     onReminderClick: () -> Unit,
@@ -94,6 +96,10 @@ fun ProfileRoute(
     val stats = ProfileStats.from(records)
     var showAccountSettings by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = showHistory && isActive) {
+        showHistory = false
+    }
 
     if (showHistory) {
         HaircutHistoryScreen(

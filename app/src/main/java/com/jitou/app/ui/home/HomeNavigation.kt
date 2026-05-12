@@ -4,13 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -33,15 +37,34 @@ internal enum class JitouScreen {
     Home,
     Appointment,
     Profile,
+    ;
+
+    val pageIndex: Int
+        get() = primaryScreens().indexOf(this)
+
+    fun systemBackTarget(): JitouScreen? = when (this) {
+        Home -> null
+        Appointment,
+        Profile -> Home
+    }
+
+    companion object {
+        fun primaryScreens(): List<JitouScreen> = listOf(Home, Appointment, Profile)
+
+        fun fromPageIndex(index: Int): JitouScreen = primaryScreens()[index.coerceIn(0, primaryScreens().lastIndex)]
+    }
 }
 
 @Composable
 internal fun JitouBottomNav(
     selected: JitouScreen,
+    pagePosition: Float = selected.pageIndex.toFloat(),
     onSelect: (JitouScreen) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    val screens = JitouScreen.primaryScreens()
+
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
@@ -50,30 +73,45 @@ internal fun JitouBottomNav(
             .background(Color(0xF7FFFFFF), RoundedCornerShape(34.dp))
             .border(width = 1.dp, color = Color(0x11000000), shape = RoundedCornerShape(34.dp))
             .padding(6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        BottomNavItem(
-            label = "首页",
-            icon = Icons.Rounded.Home,
-            selected = selected == JitouScreen.Home,
-            onClick = { onSelect(JitouScreen.Home) },
-            modifier = Modifier.weight(1f),
+        val itemWidth = maxWidth / screens.size
+        val indicatorPosition = pagePosition.coerceIn(0f, (screens.size - 1).toFloat())
+
+        Box(
+            modifier = Modifier
+                .offset(x = itemWidth * indicatorPosition)
+                .width(itemWidth)
+                .height(58.dp)
+                .background(Color(0xFFE9ECEF), RoundedCornerShape(28.dp)),
         )
-        BottomNavItem(
-            label = "约头",
-            icon = Icons.Rounded.CalendarMonth,
-            selected = selected == JitouScreen.Appointment,
-            onClick = { onSelect(JitouScreen.Appointment) },
-            modifier = Modifier.weight(1f),
-        )
-        BottomNavItem(
-            label = "我的",
-            icon = Icons.Rounded.Person,
-            selected = selected == JitouScreen.Profile,
-            onClick = { onSelect(JitouScreen.Profile) },
-            modifier = Modifier.weight(1f),
-        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BottomNavItem(
+                label = "首页",
+                icon = Icons.Rounded.Home,
+                selected = selected == JitouScreen.Home,
+                onClick = { onSelect(JitouScreen.Home) },
+                modifier = Modifier.weight(1f),
+            )
+            BottomNavItem(
+                label = "约头",
+                icon = Icons.Rounded.CalendarMonth,
+                selected = selected == JitouScreen.Appointment,
+                onClick = { onSelect(JitouScreen.Appointment) },
+                modifier = Modifier.weight(1f),
+            )
+            BottomNavItem(
+                label = "我的",
+                icon = Icons.Rounded.Person,
+                selected = selected == JitouScreen.Profile,
+                onClick = { onSelect(JitouScreen.Profile) },
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
@@ -89,7 +127,6 @@ private fun BottomNavItem(
         modifier = modifier
             .height(58.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(if (selected) Color(0xFFE9ECEF) else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
