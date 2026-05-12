@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -66,11 +67,11 @@ import java.time.format.DateTimeFormatter
 
 private val ProfileBackground = Color(0xFFF8F7F2)
 private val ProfileInk = Color(0xFF171717)
-private val ProfileYellow = Color(0xFFFFD84D)
 private val ProfileMint = Color(0xFFCFECE1)
 private val ProfileWarmPanel = Color(0xFFF0ECE2)
 private val ProfileMuted = Color(0xFF72706A)
 private val ProfileSoftLine = Color(0x14000000)
+private val ProfileAvatarLine = Color(0xFFD5D0C6)
 private val MonthDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd")
 
 @Composable
@@ -103,7 +104,7 @@ fun ProfileRoute(
         ) {
             UserInfoCard(
                 nickname = nickname,
-                averageIntervalDays = stats.averageIntervalDays,
+                daysSinceLastHaircut = stats.daysSinceLastHaircut,
                 onClick = { showAccountSettings = true },
             )
             FeatureEntryGrid(
@@ -136,23 +137,26 @@ fun ProfileRoute(
 @Composable
 private fun UserInfoCard(
     nickname: String,
-    averageIntervalDays: Int,
+    daysSinceLastHaircut: Int?,
     onClick: () -> Unit,
 ) {
-    FramedCard(
-        modifier = Modifier.clickable(onClick = onClick),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(top = 10.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        Box(
+            modifier = Modifier.size(108.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
-                    .size(58.dp)
-                    .background(ProfileYellow, CircleShape)
-                    .border(2.dp, ProfileInk, CircleShape)
-                    .padding(3.dp),
+                    .size(96.dp)
+                    .border(2.dp, ProfileAvatarLine, CircleShape)
+                    .padding(4.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
@@ -164,16 +168,34 @@ private fun UserInfoCard(
                     contentScale = ContentScale.Crop,
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("昵称：$nickname", color = ProfileInk, fontSize = 17.sp, fontWeight = FontWeight.Black)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = (-2).dp, y = 3.dp)
+                    .size(24.dp)
+                    .background(ProfileWarmPanel, CircleShape)
+                    .border(1.dp, ProfileAvatarLine, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = "我的剪头周期：平均 ${averageIntervalDays.ifZeroPlaceholder()} 天",
+                    text = daysSinceLastHaircut?.toString() ?: "--",
                     color = ProfileMuted,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = if ((daysSinceLastHaircut ?: 0) > 99) 9.sp else 11.sp,
+                    lineHeight = 12.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.sp,
+                    maxLines = 1,
                 )
             }
         }
+        Text(
+            text = nickname,
+            color = ProfileInk,
+            fontSize = 23.sp,
+            lineHeight = 27.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+        )
     }
 }
 
@@ -486,6 +508,7 @@ private data class ProfileStats(
     val latestIntervalDays: Int,
     val longestIntervalDays: Int,
     val shortestIntervalDays: Int,
+    val daysSinceLastHaircut: Int?,
     val recentIntervals: List<HaircutInterval>,
     val weekdayFrequencies: List<WeekdayFrequency>,
 ) {
@@ -513,6 +536,7 @@ private data class ProfileStats(
                 latestIntervalDays = intervals.lastOrNull()?.days ?: 0,
                 longestIntervalDays = intervals.maxOfOrNull { it.days } ?: 0,
                 shortestIntervalDays = intervals.minOfOrNull { it.days } ?: 0,
+                daysSinceLastHaircut = HaircutAnalytics.daysSinceLastHaircut(records),
                 recentIntervals = intervals.takeLast(5).asReversed(),
                 weekdayFrequencies = frequencies,
             )
