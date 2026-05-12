@@ -11,6 +11,9 @@ interface HaircutRecordDao {
     @Query("SELECT * FROM haircut_records WHERE deletedAtMillis IS NULL ORDER BY dateEpochDay ASC")
     fun observeAll(): Flow<List<HaircutRecordEntity>>
 
+    @Query("SELECT * FROM haircut_records WHERE deletedAtMillis IS NULL ORDER BY dateEpochDay ASC")
+    suspend fun getAll(): List<HaircutRecordEntity>
+
     @Query("SELECT COUNT(*) FROM haircut_records")
     suspend fun count(): Int
 

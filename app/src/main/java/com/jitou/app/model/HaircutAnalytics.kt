@@ -38,6 +38,17 @@ object HaircutAnalytics {
             )
         }
     }
+
+    fun historyEntries(records: List<HaircutRecord>, today: LocalDate = LocalDate.now()): List<HaircutHistoryEntry> =
+        records
+            .sortedByDescending { it.date }
+            .mapIndexed { index, record ->
+                HaircutHistoryEntry(
+                    date = record.date,
+                    daysAgo = ChronoUnit.DAYS.between(record.date, today).coerceAtLeast(0).toInt(),
+                    isLatest = index == 0,
+                )
+            }
 }
 
 fun DayOfWeek.zhLabel(): String = when (this) {

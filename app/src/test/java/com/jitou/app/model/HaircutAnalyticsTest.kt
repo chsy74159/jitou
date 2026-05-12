@@ -66,6 +66,29 @@ class HaircutAnalyticsTest {
     }
 
     @Test
+    fun historyEntriesReturnNewestFirstWithLatestMarked() {
+        val records = listOf(
+            HaircutRecord("middle", LocalDate.of(2026, 3, 10)),
+            HaircutRecord("latest", LocalDate.of(2026, 5, 1)),
+            HaircutRecord("old", LocalDate.of(2025, 12, 31)),
+        )
+
+        val entries = HaircutAnalytics.historyEntries(
+            records = records,
+            today = LocalDate.of(2026, 5, 13),
+        )
+
+        assertEquals(
+            listOf(
+                HaircutHistoryEntry(LocalDate.of(2026, 5, 1), daysAgo = 12, isLatest = true),
+                HaircutHistoryEntry(LocalDate.of(2026, 3, 10), daysAgo = 64, isLatest = false),
+                HaircutHistoryEntry(LocalDate.of(2025, 12, 31), daysAgo = 133, isLatest = false),
+            ),
+            entries,
+        )
+    }
+
+    @Test
     fun emptyRecordsReturnNeutralStats() {
         val stats = HaircutAnalytics.calculate(emptyList())
 

@@ -27,14 +27,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jitou.app.R
 import com.jitou.app.model.HaircutAnalytics
+import com.jitou.app.model.HaircutHistoryEntry
 import com.jitou.app.model.HaircutInterval
 import com.jitou.app.model.HaircutRecord
 import com.jitou.app.model.fakeHaircutRecords
@@ -64,15 +67,16 @@ import com.jitou.app.ui.theme.JitouTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val ProfileBackground = Color(0xFFF8F7F2)
 private val ProfileInk = Color(0xFF171717)
-private val ProfileMint = Color(0xFFCFECE1)
 private val ProfileWarmPanel = Color(0xFFF0ECE2)
 private val ProfileMuted = Color(0xFF72706A)
 private val ProfileSoftLine = Color(0x14000000)
 private val ProfileAvatarLine = Color(0xFFD5D0C6)
 private val MonthDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd")
+private val HistoryDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH)
 
 @Composable
 fun ProfileRoute(
@@ -89,34 +93,42 @@ fun ProfileRoute(
 ) {
     val stats = ProfileStats.from(records)
     var showAccountSettings by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
 
-    Scaffold(contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ProfileBackground)
-                .padding(padding)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            UserInfoCard(
-                nickname = nickname,
-                daysSinceLastHaircut = stats.daysSinceLastHaircut,
-                onClick = { showAccountSettings = true },
-            )
-            FeatureEntryGrid(
-                onDataClick = {},
-                onAddRecord = onAddRecord,
-                onReminderClick = onReminderClick,
-                onRefreshData = onRefreshData,
-                isRefreshingData = isRefreshingData,
-            )
-            ProfileStatsCard(nickname = nickname, stats = stats)
-            RecentIntervalsPanel(intervals = stats.recentIntervals)
-            Spacer(modifier = Modifier.height(104.dp))
+    if (showHistory) {
+        HaircutHistoryScreen(
+            records = records,
+            onBack = { showHistory = false },
+        )
+    } else {
+        Scaffold(contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(ProfileBackground)
+                    .padding(padding)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                UserInfoCard(
+                    nickname = nickname,
+                    daysSinceLastHaircut = stats.daysSinceLastHaircut,
+                    onClick = { showAccountSettings = true },
+                )
+                FeatureEntryGrid(
+                    onDataClick = { showHistory = true },
+                    onAddRecord = onAddRecord,
+                    onReminderClick = onReminderClick,
+                    onRefreshData = onRefreshData,
+                    isRefreshingData = isRefreshingData,
+                )
+                ProfileStatsCard(nickname = nickname, stats = stats)
+                RecentIntervalsPanel(intervals = stats.recentIntervals)
+                Spacer(modifier = Modifier.height(104.dp))
+            }
         }
     }
 
@@ -200,6 +212,122 @@ private fun UserInfoCard(
 }
 
 @Composable
+private fun HaircutHistoryScreen(
+    records: List<HaircutRecord>,
+    onBack: () -> Unit,
+) {
+    val entries = remember(records) { HaircutAnalytics.historyEntries(records) }
+
+    Scaffold(contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ProfileBackground)
+                .padding(padding)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                IconButton(onClick = onBack, modifier = Modifier.size(42.dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "返回",
+                        tint = ProfileInk,
+                    )
+                }
+                Text(
+                    text = "历史剪头",
+                    color = ProfileInk,
+                    fontSize = 22.sp,
+                    lineHeight = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.sp,
+                )
+            }
+
+            if (entries.isEmpty()) {
+                EmptyHistoryState()
+            } else {
+                entries.forEach { entry ->
+                    HaircutHistoryRow(entry = entry)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(104.dp))
+        }
+    }
+}
+
+@Composable
+private fun EmptyHistoryState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 140.dp)
+            .background(Color.White, RoundedCornerShape(18.dp))
+            .border(1.dp, ProfileSoftLine, RoundedCornerShape(18.dp))
+            .padding(18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text("还没有剪头记录", color = ProfileInk, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text("补录一次后会出现在这里", color = ProfileMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun HaircutHistoryRow(entry: HaircutHistoryEntry) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 54.dp)
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .border(1.dp, ProfileSoftLine, RoundedCornerShape(16.dp))
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = entry.date.format(HistoryDateFormatter),
+            color = ProfileInk,
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+        )
+        if (entry.isLatest) {
+            Text(
+                text = "Latest",
+                color = Color(0xFF7C8AA5),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.sp,
+                modifier = Modifier
+                    .background(Color(0xFFEFF2F8), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            )
+        } else {
+            Text(
+                text = "${entry.daysAgo} days ago",
+                color = ProfileMuted,
+                fontSize = 13.sp,
+                lineHeight = 17.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.sp,
+            )
+        }
+    }
+}
+
+@Composable
 private fun AccountSettingsDialog(
     nickname: String,
     nicknameError: String?,
@@ -275,7 +403,7 @@ private fun FeatureEntryGrid(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FeatureEntry("数据剪头", Icons.Rounded.BarChart, onDataClick, Modifier.weight(1f))
+            FeatureEntry("历史剪头", Icons.Rounded.History, onDataClick, Modifier.weight(1f))
             FeatureEntry("补录头期", Icons.Rounded.Add, onAddRecord, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -17,6 +17,7 @@ import com.jitou.app.model.QueueEvent
 import com.jitou.app.model.QueueState
 import com.jitou.app.model.ReminderUiState
 import com.jitou.app.model.fakeReminderState
+import com.jitou.app.notifications.HaircutNotificationScheduler
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ data class JitouHomeUiState(
 
 class JitouHomeViewModel(
     private val repository: JitouRepository,
+    private val appContext: Context? = null,
 ) : ViewModel() {
     private val isQueueing = MutableStateFlow(false)
     private val friendName = MutableStateFlow("XX")
@@ -89,12 +91,14 @@ class JitouHomeViewModel(
             repository.friendName()?.let { name ->
                 friendName.value = name
             }
+            scheduleHaircutNotifications()
         }
     }
 
     fun addHaircutRecord(date: LocalDate) {
         viewModelScope.launch {
             repository.addHaircutRecord(date)
+            scheduleHaircutNotifications()
             reduceQueue(QueueEvent.RecordedHaircut)
         }
     }
@@ -103,6 +107,7 @@ class JitouHomeViewModel(
         viewModelScope.launch {
             repository.addHaircutRecord(date, note = "和朋友一起")
             repository.setActiveProposal(null)
+            scheduleHaircutNotifications()
             reduceQueue(QueueEvent.RecordedHaircut)
         }
     }
@@ -116,6 +121,7 @@ class JitouHomeViewModel(
     fun setActiveProposal(proposal: HaircutProposal?) {
         viewModelScope.launch {
             repository.setActiveProposal(proposal)
+            scheduleHaircutNotifications()
         }
     }
 
@@ -161,6 +167,7 @@ class JitouHomeViewModel(
                 repository.friendName()?.let { name ->
                     friendName.value = name
                 }
+                scheduleHaircutNotifications()
             } finally {
                 val remainingCooldown = ManualRefreshCooldownMillis - (SystemClock.elapsedRealtime() - now)
                 if (remainingCooldown > 0) {
@@ -181,6 +188,10 @@ class JitouHomeViewModel(
 
     private fun reduceQueue(event: QueueEvent) {
         isQueueing.update { current -> QueueState.reduce(current, event) }
+    }
+
+    private fun scheduleHaircutNotifications() {
+        appContext?.let { HaircutNotificationScheduler.scheduleNext(it) }
     }
 
     private data class ProfileState(
@@ -206,6 +217,7 @@ class JitouHomeViewModel(
                                 database = database,
                                 syncRepository = syncRepository,
                             ),
+                            appContext = applicationContext,
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

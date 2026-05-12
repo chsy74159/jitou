@@ -22,6 +22,12 @@ data class HaircutInterval(
     val days: Int,
 )
 
+data class HaircutHistoryEntry(
+    val date: LocalDate,
+    val daysAgo: Int,
+    val isLatest: Boolean,
+)
+
 data class HaircutProposal(
     val id: String,
     val proposedDate: LocalDate,
