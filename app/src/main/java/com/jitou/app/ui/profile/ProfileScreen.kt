@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,12 +28,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,14 +56,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jitou.app.R
 import com.jitou.app.model.HaircutAnalytics
+import com.jitou.app.model.HaircutInterval
 import com.jitou.app.model.HaircutRecord
 import com.jitou.app.model.fakeHaircutRecords
-import com.jitou.app.model.zhLabel
 import com.jitou.app.ui.theme.JitouTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 private val ProfileBackground = Color(0xFFF8F7F2)
 private val ProfileInk = Color(0xFF171717)
@@ -75,9 +76,15 @@ private val MonthDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("
 @Composable
 fun ProfileRoute(
     records: List<HaircutRecord>,
+    nickname: String,
+    nicknameError: String?,
     onBack: () -> Unit,
     onAddRecord: () -> Unit,
     onReminderClick: () -> Unit,
+    onNicknameChange: (String) -> Unit,
+    onRefreshData: () -> Unit,
+    isRefreshingData: Boolean,
+    onLogout: () -> Unit,
 ) {
     val stats = ProfileStats.from(records)
     var showAccountSettings by remember { mutableStateOf(false) }
@@ -95,6 +102,7 @@ fun ProfileRoute(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             UserInfoCard(
+                nickname = nickname,
                 averageIntervalDays = stats.averageIntervalDays,
                 onClick = { showAccountSettings = true },
             )
@@ -102,27 +110,32 @@ fun ProfileRoute(
                 onDataClick = {},
                 onAddRecord = onAddRecord,
                 onReminderClick = onReminderClick,
-                onAboutClick = {},
+                onRefreshData = onRefreshData,
+                isRefreshingData = isRefreshingData,
             )
-            CoreStatsGrid(stats = stats)
+            ProfileStatsCard(nickname = nickname, stats = stats)
             RecentIntervalsPanel(intervals = stats.recentIntervals)
-            WeekdayFrequencyPanel(items = stats.weekdayFrequencies)
-            TrendHint(stats = stats)
             Spacer(modifier = Modifier.height(104.dp))
         }
     }
 
     if (showAccountSettings) {
         AccountSettingsDialog(
+            nickname = nickname,
+            nicknameError = nicknameError,
             onDismiss = { showAccountSettings = false },
-            onChangeNickname = { showAccountSettings = false },
-            onLogout = { showAccountSettings = false },
+            onChangeNickname = onNicknameChange,
+            onLogout = {
+                showAccountSettings = false
+                onLogout()
+            },
         )
     }
 }
 
 @Composable
 private fun UserInfoCard(
+    nickname: String,
     averageIntervalDays: Int,
     onClick: () -> Unit,
 ) {
@@ -152,7 +165,7 @@ private fun UserInfoCard(
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("昵称：Sion", color = ProfileInk, fontSize = 17.sp, fontWeight = FontWeight.Black)
+                Text("昵称：$nickname", color = ProfileInk, fontSize = 17.sp, fontWeight = FontWeight.Black)
                 Text(
                     text = "我的剪头周期：平均 ${averageIntervalDays.ifZeroPlaceholder()} 天",
                     color = ProfileMuted,
@@ -166,10 +179,14 @@ private fun UserInfoCard(
 
 @Composable
 private fun AccountSettingsDialog(
+    nickname: String,
+    nicknameError: String?,
     onDismiss: () -> Unit,
-    onChangeNickname: () -> Unit,
+    onChangeNickname: (String) -> Unit,
     onLogout: () -> Unit,
 ) {
+    var nicknameDraft by remember(nickname) { mutableStateOf(nickname) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -177,7 +194,21 @@ private fun AccountSettingsDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AccountActionButton(text = "更改昵称", onClick = onChangeNickname)
+                OutlinedTextField(
+                    value = nicknameDraft,
+                    onValueChange = { nicknameDraft = it },
+                    label = { Text("昵称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                nicknameError?.let { message ->
+                    Text(message, color = Color(0xFFB3261E), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                AccountActionButton(
+                    text = "保存昵称",
+                    enabled = nicknameDraft.isNotBlank(),
+                    onClick = { onChangeNickname(nicknameDraft) },
+                )
                 AccountActionButton(text = "退出登录", onClick = onLogout)
             }
         },
@@ -194,10 +225,12 @@ private fun AccountSettingsDialog(
 @Composable
 private fun AccountActionButton(
     text: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(46.dp),
@@ -215,7 +248,8 @@ private fun FeatureEntryGrid(
     onDataClick: () -> Unit,
     onAddRecord: () -> Unit,
     onReminderClick: () -> Unit,
-    onAboutClick: () -> Unit,
+    onRefreshData: () -> Unit,
+    isRefreshingData: Boolean,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -224,7 +258,13 @@ private fun FeatureEntryGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FeatureEntry("提醒设置", Icons.Rounded.Notifications, onReminderClick, Modifier.weight(1f))
-            FeatureEntry("关于几头", Icons.Rounded.Info, onAboutClick, Modifier.weight(1f))
+            FeatureEntry(
+                text = if (isRefreshingData) "刷新中" else "刷新数据",
+                icon = Icons.Rounded.Refresh,
+                onClick = onRefreshData,
+                modifier = Modifier.weight(1f),
+                enabled = !isRefreshingData,
+            )
         }
     }
 }
@@ -235,9 +275,11 @@ private fun FeatureEntry(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.height(46.dp),
         shape = RoundedCornerShape(22.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ProfileInk),
@@ -251,36 +293,99 @@ private fun FeatureEntry(
 }
 
 @Composable
-private fun CoreStatsGrid(stats: ProfileStats) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatCard("历史平均间隔", "${stats.averageIntervalDays.ifZeroPlaceholder()} 天剪一次", Modifier.weight(1f))
-            StatCard("最近一次间隔", "${stats.latestIntervalDays.ifZeroPlaceholder()} 天", Modifier.weight(1f))
+private fun ProfileStatsCard(
+    nickname: String,
+    stats: ProfileStats,
+) {
+    FramedCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(Color(0xFFEAF0FA), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = nickname.take(2).uppercase(),
+                    color = Color(0xFF5577A8),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.sp,
+                )
+            }
+            Text("你的剪头数据", color = ProfileInk, fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
         }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatCard("最长间隔", "${stats.longestIntervalDays.ifZeroPlaceholder()} 天", Modifier.weight(1f))
-            StatCard("最短间隔", "${stats.shortestIntervalDays.ifZeroPlaceholder()} 天", Modifier.weight(1f))
+            CompactMetricTile(
+                label = "平均间隔",
+                value = "${stats.averageIntervalDays.ifZeroPlaceholder()}天",
+                modifier = Modifier.weight(1f),
+            )
+            CompactMetricTile(
+                label = "总剪头",
+                value = "${stats.totalCuts}",
+                modifier = Modifier.weight(1f),
+            )
         }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CompactMetricTile(
+                label = "最近间隔",
+                value = "${stats.latestIntervalDays.ifZeroPlaceholder()}天",
+                modifier = Modifier.weight(1f),
+            )
+            CompactMetricTile(
+                label = "最长 / 最短",
+                value = "${stats.longestIntervalDays.ifZeroPlaceholder()} / ${stats.shortestIntervalDays.ifZeroPlaceholder()}天",
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Text("按星期分布", color = ProfileMuted, fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
+        WeekdayBarChart(items = stats.weekdayFrequencies)
     }
 }
 
 @Composable
-private fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
+private fun CompactMetricTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
-            .height(88.dp)
-            .background(Color.White, RoundedCornerShape(24.dp))
-            .border(1.dp, ProfileSoftLine, RoundedCornerShape(24.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
+            .heightIn(min = 84.dp)
+            .background(Color(0xFFF8F9FE), RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
     ) {
-        Text(title, color = ProfileMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(value, color = ProfileInk, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
+        Text(
+            label,
+            color = ProfileMuted,
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+        Text(
+            value,
+            color = Color(0xFF5577A8),
+            fontSize = if (value.length > 6) 17.sp else 20.sp,
+            lineHeight = if (value.length > 6) 21.sp else 24.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+        )
     }
 }
 
 @Composable
-private fun RecentIntervalsPanel(intervals: List<IntervalUiItem>) {
+private fun RecentIntervalsPanel(intervals: List<HaircutInterval>) {
     FramedCard {
         Text("近 5 次剪头间隔", color = ProfileInk, fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
         intervals.forEach { item ->
@@ -302,56 +407,59 @@ private fun RecentIntervalsPanel(intervals: List<IntervalUiItem>) {
 }
 
 @Composable
-private fun WeekdayFrequencyPanel(items: List<WeekdayFrequency>) {
+private fun WeekdayBarChart(items: List<WeekdayFrequency>) {
     val maxCount = items.maxOfOrNull { it.count } ?: 1
 
-    FramedCard {
-        Text("最常剪头的日子", color = ProfileInk, fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
         items.forEach { item ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            val barHeight = if (item.count == 0) 2.dp else ((item.count.toFloat() / maxCount) * 58).dp.coerceAtLeast(14.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    item.day.zhLabel(),
-                    color = ProfileInk,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.width(36.dp),
-                )
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(18.dp)
-                        .background(ProfileWarmPanel, RoundedCornerShape(9.dp))
-                        .border(1.dp, ProfileSoftLine, RoundedCornerShape(9.dp)),
-                    contentAlignment = Alignment.CenterStart,
+                        .fillMaxWidth()
+                        .height(88.dp),
+                    contentAlignment = Alignment.BottomCenter,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth((item.count.toFloat() / maxCount).coerceIn(0.08f, 1f))
-                            .height(18.dp)
-                            .background(ProfileMint, RoundedCornerShape(9.dp)),
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        Text(
+                            if (item.count == 0) " " else item.count.toString(),
+                            color = ProfileMuted,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.sp,
+                            maxLines = 1,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.82f)
+                                .height(barHeight)
+                                .background(
+                                    if (item.count == 0) Color.Transparent else Color(0xFF5577A8),
+                                    RoundedCornerShape(6.dp),
+                                ),
+                        )
+                    }
                 }
-                Text("${item.count} 次", color = ProfileInk, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(item.day.shortLabel(), color = ProfileMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
-    }
-}
-
-@Composable
-private fun TrendHint(stats: ProfileStats) {
-    val hint = when {
-        stats.latestIntervalDays == 0 -> "趋势提示：再记录几次，几头就能给你更准的周期判断。"
-        stats.latestIntervalDays > stats.averageIntervalDays -> "趋势提示：最近这次比平均周期更久，下次可以提前一点约。"
-        stats.latestIntervalDays < stats.averageIntervalDays -> "趋势提示：最近剪得更勤，当前周期保持得不错。"
-        else -> "趋势提示：你的剪头节奏很稳定。"
-    }
-
-    FramedCard(backgroundColor = ProfileYellow) {
-        Text(hint, color = ProfileInk, fontSize = 13.sp, fontWeight = FontWeight.Black, letterSpacing = 0.sp)
     }
 }
 
@@ -373,33 +481,35 @@ private fun FramedCard(
 }
 
 private data class ProfileStats(
+    val totalCuts: Int,
     val averageIntervalDays: Int,
     val latestIntervalDays: Int,
     val longestIntervalDays: Int,
     val shortestIntervalDays: Int,
-    val recentIntervals: List<IntervalUiItem>,
+    val recentIntervals: List<HaircutInterval>,
     val weekdayFrequencies: List<WeekdayFrequency>,
 ) {
     companion object {
         fun from(records: List<HaircutRecord>): ProfileStats {
             val sorted = records.sortedBy { it.date }
-            val intervals = sorted.zipWithNext { previous, next ->
-                IntervalUiItem(
-                    from = previous.date,
-                    to = next.date,
-                    days = ChronoUnit.DAYS.between(previous.date, next.date).toInt(),
-                )
-            }
-            val frequencies = sorted
+            val analytics = HaircutAnalytics.calculate(records)
+            val intervals = HaircutAnalytics.calculateIntervals(records)
+            val countsByDay = sorted
                 .groupingBy { it.date.dayOfWeek }
                 .eachCount()
-                .entries
-                .sortedWith(compareByDescending<Map.Entry<DayOfWeek, Int>> { it.value }.thenBy { it.key.value })
-                .take(4)
-                .map { WeekdayFrequency(day = it.key, count = it.value) }
+            val frequencies = listOf(
+                DayOfWeek.SUNDAY,
+                DayOfWeek.MONDAY,
+                DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY,
+                DayOfWeek.FRIDAY,
+                DayOfWeek.SATURDAY,
+            ).map { day -> WeekdayFrequency(day = day, count = countsByDay[day] ?: 0) }
 
             return ProfileStats(
-                averageIntervalDays = HaircutAnalytics.calculate(records).averageIntervalDays,
+                totalCuts = records.size,
+                averageIntervalDays = analytics.averageIntervalDays,
                 latestIntervalDays = intervals.lastOrNull()?.days ?: 0,
                 longestIntervalDays = intervals.maxOfOrNull { it.days } ?: 0,
                 shortestIntervalDays = intervals.minOfOrNull { it.days } ?: 0,
@@ -410,16 +520,20 @@ private data class ProfileStats(
     }
 }
 
-private data class IntervalUiItem(
-    val from: LocalDate,
-    val to: LocalDate,
-    val days: Int,
-)
-
 private data class WeekdayFrequency(
     val day: DayOfWeek,
     val count: Int,
 )
+
+private fun DayOfWeek.shortLabel(): String = when (this) {
+    DayOfWeek.SUNDAY -> "Sun"
+    DayOfWeek.MONDAY -> "Mon"
+    DayOfWeek.TUESDAY -> "Tue"
+    DayOfWeek.WEDNESDAY -> "Wed"
+    DayOfWeek.THURSDAY -> "Thu"
+    DayOfWeek.FRIDAY -> "Fri"
+    DayOfWeek.SATURDAY -> "Sat"
+}
 
 private fun Int.ifZeroPlaceholder(): String = if (this == 0) "--" else toString()
 
@@ -429,9 +543,15 @@ private fun ProfilePreview() {
     JitouTheme {
         ProfileRoute(
             records = fakeHaircutRecords(LocalDate.of(2026, 5, 2)),
+            nickname = "Sion",
+            nicknameError = null,
             onBack = {},
             onAddRecord = {},
             onReminderClick = {},
+            onNicknameChange = {},
+            onRefreshData = {},
+            isRefreshingData = false,
+            onLogout = {},
         )
     }
 }

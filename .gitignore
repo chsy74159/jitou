@@ -1,0 +1,37 @@
+.docs/
+# Gradle / build
+.gradle/
+.kotlin/
+build/
+*/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Local machine config
+local.properties
+
+# Android outputs
+captures/
+outputs/
+*.apk
+*.ap_
+*.aab
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+.env
+.env.*
+google-services.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

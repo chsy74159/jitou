@@ -24,6 +24,33 @@ class HaircutAnalyticsTest {
     }
 
     @Test
+    fun calculateIntervalsReturnsChronologicalIntervalsWithDateBounds() {
+        val records = listOf(
+            HaircutRecord("3", LocalDate.of(2026, 3, 10)),
+            HaircutRecord("1", LocalDate.of(2026, 1, 1)),
+            HaircutRecord("2", LocalDate.of(2026, 2, 1)),
+        )
+
+        val intervals = HaircutAnalytics.calculateIntervals(records)
+
+        assertEquals(
+            listOf(
+                HaircutInterval(
+                    from = LocalDate.of(2026, 1, 1),
+                    to = LocalDate.of(2026, 2, 1),
+                    days = 31,
+                ),
+                HaircutInterval(
+                    from = LocalDate.of(2026, 2, 1),
+                    to = LocalDate.of(2026, 3, 10),
+                    days = 37,
+                ),
+            ),
+            intervals,
+        )
+    }
+
+    @Test
     fun daysSinceLastHaircutUsesLatestRecord() {
         val records = listOf(
             HaircutRecord("old", LocalDate.of(2026, 4, 1)),

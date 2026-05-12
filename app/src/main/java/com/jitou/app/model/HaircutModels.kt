@@ -16,6 +16,12 @@ data class HaircutStats(
     val mostFrequentWeekday: DayOfWeek?,
 )
 
+data class HaircutInterval(
+    val from: LocalDate,
+    val to: LocalDate,
+    val days: Int,
+)
+
 data class HaircutProposal(
     val id: String,
     val proposedDate: LocalDate,

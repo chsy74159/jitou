@@ -15,6 +15,10 @@ data class HaircutRecordEntity(
     @PrimaryKey val id: String,
     val dateEpochDay: Long,
     val note: String?,
+    val remoteId: String? = null,
+    val updatedAtMillis: Long = nowMillis(),
+    val deletedAtMillis: Long? = null,
+    val syncState: String = SyncState.SYNCED.name,
 )
 
 @Entity(tableName = "appointment_proposals")
@@ -25,6 +29,10 @@ data class AppointmentProposalEntity(
     val proposerName: String,
     val status: String,
     val reminderDaysBefore: Int,
+    val remoteId: String? = null,
+    val updatedAtMillis: Long = nowMillis(),
+    val deletedAtMillis: Long? = null,
+    val syncState: String = SyncState.SYNCED.name,
 )
 
 @Entity(tableName = "appointment_history")
@@ -34,6 +42,10 @@ data class AppointmentHistoryEntity(
     val minuteOfDay: Int,
     val companionName: String,
     val result: String,
+    val remoteId: String? = null,
+    val updatedAtMillis: Long = nowMillis(),
+    val deletedAtMillis: Long? = null,
+    val syncState: String = SyncState.SYNCED.name,
 )
 
 @Entity(tableName = "reminder_settings")
@@ -42,10 +54,27 @@ data class ReminderSettingsEntity(
     val enabled: Boolean,
     val daysBefore: Int,
     val minuteOfDay: Int,
+    val remoteId: String? = null,
+    val updatedAtMillis: Long = nowMillis(),
+    val deletedAtMillis: Long? = null,
+    val syncState: String = SyncState.SYNCED.name,
+)
+
+@Entity(tableName = "sync_metadata")
+data class SyncMetadataEntity(
+    @PrimaryKey val key: String,
+    val lastSyncAtMillis: Long,
 )
 
 const val ActiveProposalId = "active"
 const val ReminderSettingsId = "default"
+
+enum class SyncState {
+    SYNCED,
+    PENDING_CREATE,
+    PENDING_UPDATE,
+    PENDING_DELETE,
+}
 
 fun HaircutRecordEntity.toDomain(): HaircutRecord = HaircutRecord(
     id = id,
@@ -53,10 +82,19 @@ fun HaircutRecordEntity.toDomain(): HaircutRecord = HaircutRecord(
     note = note,
 )
 
-fun HaircutRecord.toEntity(): HaircutRecordEntity = HaircutRecordEntity(
+fun HaircutRecord.toEntity(
+    remoteId: String? = null,
+    updatedAtMillis: Long = nowMillis(),
+    deletedAtMillis: Long? = null,
+    syncState: SyncState = SyncState.SYNCED,
+): HaircutRecordEntity = HaircutRecordEntity(
     id = id,
     dateEpochDay = date.toEpochDay(),
     note = note,
+    remoteId = remoteId,
+    updatedAtMillis = updatedAtMillis,
+    deletedAtMillis = deletedAtMillis,
+    syncState = syncState.name,
 )
 
 fun AppointmentProposalEntity.toDomain(): HaircutProposal = HaircutProposal(
@@ -68,13 +106,22 @@ fun AppointmentProposalEntity.toDomain(): HaircutProposal = HaircutProposal(
     reminderDaysBefore = reminderDaysBefore,
 )
 
-fun HaircutProposal.toEntity(): AppointmentProposalEntity = AppointmentProposalEntity(
+fun HaircutProposal.toEntity(
+    remoteId: String? = null,
+    updatedAtMillis: Long = nowMillis(),
+    deletedAtMillis: Long? = null,
+    syncState: SyncState = SyncState.SYNCED,
+): AppointmentProposalEntity = AppointmentProposalEntity(
     id = ActiveProposalId,
     proposedDateEpochDay = proposedDate.toEpochDay(),
     proposedMinuteOfDay = proposedTime.toMinuteOfDay(),
     proposerName = proposerName,
     status = status.name,
     reminderDaysBefore = reminderDaysBefore,
+    remoteId = remoteId,
+    updatedAtMillis = updatedAtMillis,
+    deletedAtMillis = deletedAtMillis,
+    syncState = syncState.name,
 )
 
 fun AppointmentHistoryEntity.toDomain(): AppointmentHistoryItem = AppointmentHistoryItem(
@@ -85,12 +132,21 @@ fun AppointmentHistoryEntity.toDomain(): AppointmentHistoryItem = AppointmentHis
     result = result,
 )
 
-fun AppointmentHistoryItem.toEntity(): AppointmentHistoryEntity = AppointmentHistoryEntity(
+fun AppointmentHistoryItem.toEntity(
+    remoteId: String? = null,
+    updatedAtMillis: Long = nowMillis(),
+    deletedAtMillis: Long? = null,
+    syncState: SyncState = SyncState.SYNCED,
+): AppointmentHistoryEntity = AppointmentHistoryEntity(
     id = id,
     dateEpochDay = date.toEpochDay(),
     minuteOfDay = time.toMinuteOfDay(),
     companionName = companionName,
     result = result,
+    remoteId = remoteId,
+    updatedAtMillis = updatedAtMillis,
+    deletedAtMillis = deletedAtMillis,
+    syncState = syncState.name,
 )
 
 fun ReminderSettingsEntity.toDomain(): ReminderUiState = ReminderUiState(
@@ -99,11 +155,22 @@ fun ReminderSettingsEntity.toDomain(): ReminderUiState = ReminderUiState(
     time = minuteOfDayToTime(minuteOfDay),
 )
 
-fun ReminderUiState.toEntity(): ReminderSettingsEntity = ReminderSettingsEntity(
+fun ReminderUiState.toEntity(
+    remoteId: String? = null,
+    updatedAtMillis: Long = nowMillis(),
+    deletedAtMillis: Long? = null,
+    syncState: SyncState = SyncState.SYNCED,
+): ReminderSettingsEntity = ReminderSettingsEntity(
     enabled = enabled,
     daysBefore = daysBefore,
     minuteOfDay = time.toMinuteOfDay(),
+    remoteId = remoteId,
+    updatedAtMillis = updatedAtMillis,
+    deletedAtMillis = deletedAtMillis,
+    syncState = syncState.name,
 )
+
+fun nowMillis(): Long = System.currentTimeMillis()
 
 private fun LocalTime.toMinuteOfDay(): Int = hour * 60 + minute
 

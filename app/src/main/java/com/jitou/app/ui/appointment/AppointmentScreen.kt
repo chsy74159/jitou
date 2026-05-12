@@ -95,6 +95,7 @@ fun AppointmentRoute(
     var selectedDate by remember { mutableStateOf(recommendedDate(averageIntervalDays)) }
     var selectedTime by remember { mutableStateOf(LocalTime.of(20, 30)) }
     var showStartFlow by remember { mutableStateOf(false) }
+    var editingProposal by remember { mutableStateOf<HaircutProposal?>(null) }
 
     Scaffold(contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)) { padding ->
         Column(
@@ -123,39 +124,55 @@ fun AppointmentRoute(
                     flowStep = AppointmentFlowStep.Date
                     selectedDate = recommendedDate(averageIntervalDays)
                     selectedTime = LocalTime.of(20, 30)
+                    editingProposal = null
                     showStartFlow = true
                 },
                 onDateChange = { selectedDate = it },
                 onTimeChange = { selectedTime = it },
                 onStepChange = { flowStep = it },
                 onSend = {
-                    onProposalChange(
+                    val editedProposal = editingProposal
+                    val nextProposal = editedProposal?.copy(
+                        proposedDate = selectedDate,
+                        proposedTime = selectedTime,
+                        proposerName = "我",
+                        status = ProposalStatus.PendingFriend,
+                    ) ?:
                         HaircutProposal(
                             id = "proposal-${System.currentTimeMillis()}",
                             proposedDate = selectedDate,
                             proposedTime = selectedTime,
                             proposerName = "我",
                             status = ProposalStatus.PendingFriend,
-                        ),
-                    )
+                        )
+                    onProposalChange(nextProposal)
                     flowStep = AppointmentFlowStep.Date
+                    editingProposal = null
                     showStartFlow = false
                 },
                 onEditDate = {
                     proposal?.let {
                         selectedDate = it.proposedDate
                         selectedTime = it.proposedTime
+                        editingProposal = it
+                        showStartFlow = true
                     }
                     flowStep = AppointmentFlowStep.Date
                 },
                 onCancel = {
                     showStartFlow = false
+                    editingProposal = null
                     onProposalChange(null)
                 },
                 onAgree = {
                     proposal?.let {
                         onProposalChange(it.copy(status = ProposalStatus.Confirmed, reminderDaysBefore = 1))
                     }
+                },
+                onReject = {
+                    showStartFlow = false
+                    editingProposal = null
+                    onProposalChange(null)
                 },
                 onComplete = {
                     proposal?.let {
@@ -243,9 +260,10 @@ private fun CurrentPlanCard(
     onEditDate: () -> Unit,
     onCancel: () -> Unit,
     onAgree: () -> Unit,
+    onReject: () -> Unit,
     onComplete: () -> Unit,
 ) {
-    if (proposal == null && showStartFlow) {
+    if (showStartFlow) {
         StartAppointmentFlow(
             step = step,
             selectedDate = selectedDate,
@@ -272,6 +290,7 @@ private fun CurrentPlanCard(
                     friendName = friendName,
                     onAgree = onAgree,
                     onEditDate = onEditDate,
+                    onReject = onReject,
                 )
                 ProposalStatus.Confirmed -> ConfirmedState(
                     proposal = proposal,
@@ -317,13 +336,15 @@ private fun WaitingMeState(
     friendName: String,
     onAgree: () -> Unit,
     onEditDate: () -> Unit,
+    onReject: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("${friendName}提议一起剪头", color = InkColor, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("${friendName}已发起", color = InkColor, fontSize = 18.sp, fontWeight = FontWeight.Black)
         Text(proposal.dateTimeText(), color = InkColor, fontSize = 16.sp, fontWeight = FontWeight.Black)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            YellowActionButton("同意", Icons.Rounded.Check, onAgree, Modifier.weight(1f))
-            WhiteActionButton("换个时间", onEditDate, Modifier.weight(1f))
+            YellowActionButton("接受", Icons.Rounded.Check, onAgree, Modifier.weight(1f))
+            WhiteActionButton("修改日期", onEditDate, Modifier.weight(1f))
+            WhiteActionButton("拒绝", onReject, Modifier.weight(1f))
         }
     }
 }

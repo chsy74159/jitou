@@ -12,10 +12,8 @@ object HaircutAnalytics {
     }
 
     fun calculate(records: List<HaircutRecord>): HaircutStats {
-        val sortedRecords = records.sortedBy { it.date }
-        val intervals = sortedRecords.zipWithNext { previous, next ->
-            ChronoUnit.DAYS.between(previous.date, next.date).toInt()
-        }
+        val intervals = calculateIntervals(records)
+        val intervalDays = intervals.map { it.days }
 
         val weekday = records
             .groupingBy { it.date.dayOfWeek }
@@ -24,10 +22,21 @@ object HaircutAnalytics {
             ?.key
 
         return HaircutStats(
-            averageIntervalDays = intervals.averageOrZero().roundToInt(),
-            recentIntervals = intervals.takeLast(4).asReversed(),
+            averageIntervalDays = intervalDays.averageOrZero().roundToInt(),
+            recentIntervals = intervalDays.takeLast(4).asReversed(),
             mostFrequentWeekday = weekday,
         )
+    }
+
+    fun calculateIntervals(records: List<HaircutRecord>): List<HaircutInterval> {
+        val sortedRecords = records.sortedBy { it.date }
+        return sortedRecords.zipWithNext { previous, next ->
+            HaircutInterval(
+                from = previous.date,
+                to = next.date,
+                days = ChronoUnit.DAYS.between(previous.date, next.date).toInt(),
+            )
+        }
     }
 }
 
