@@ -78,7 +78,7 @@ private fun ProfileChip(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .height(38.dp)
-            .background(Ink, RoundedCornerShape(19.dp))
+            .background(WarmPanel, RoundedCornerShape(19.dp))
             .clickable(onClick = onClick)
             .padding(start = 7.dp, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -94,7 +94,7 @@ private fun ProfileChip(onClick: () -> Unit) {
         )
         Text(
             text = "我的",
-            color = Color.White,
+            color = Ink,
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 0.sp,
@@ -113,14 +113,14 @@ internal fun AvatarHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(318.dp)
-            .shadow(18.dp, RoundedCornerShape(36.dp), ambientColor = Color(0x18000000), spotColor = Color(0x14000000))
-            .background(Color.White, RoundedCornerShape(36.dp))
+            .shadow(12.dp, RoundedCornerShape(36.dp), ambientColor = SoftLine, spotColor = SoftLine)
+            .background(Surface, RoundedCornerShape(36.dp))
             .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(36.dp)),
     ) {
         HeroTag(
             text = "TODAY",
             containerColor = Ink,
-            textColor = Color.White,
+            textColor = Surface,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 18.dp, start = 18.dp),
@@ -281,7 +281,7 @@ private fun SummaryCapsule(
     Column(
         modifier = modifier
             .height(78.dp)
-            .shadow(6.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x0F000000), spotColor = Color(0x0A000000))
+            .shadow(4.dp, RoundedCornerShape(24.dp), ambientColor = SoftLine, spotColor = SoftLine)
             .background(tint, RoundedCornerShape(24.dp))
             .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(24.dp))
             .padding(horizontal = 8.dp),
@@ -290,7 +290,7 @@ private fun SummaryCapsule(
     ) {
         Text(
             text = label,
-            color = Color(0xFF57544E),
+            color = MutedInk,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.sp,
@@ -313,7 +313,7 @@ private fun StatusPill(status: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color(0xFFF4F1EA), RoundedCornerShape(22.dp))
+            .background(Surface, RoundedCornerShape(22.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -331,14 +331,14 @@ private fun StatusPill(status: String, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .background(Ink, CircleShape),
+                .background(Yellow, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Rounded.CheckCircle,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = Yellow,
+                tint = Ink,
             )
         }
     }
@@ -360,7 +360,7 @@ private fun SoftActionButton(
             containerColor = containerColor,
             contentColor = Ink,
         ),
-        border = BorderStroke(2.dp, Color(0x12000000)),
+        border = BorderStroke(1.dp, SoftLine),
         elevation = null,
     ) {
         if (icon != null) {
@@ -385,7 +385,7 @@ internal fun PrimaryActionRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(28.dp))
+            .background(Surface, RoundedCornerShape(28.dp))
             .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(28.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -448,8 +448,9 @@ internal fun CoopPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(if (showFriendQueueNotice) 176.dp else 150.dp)
-            .shadow(10.dp, RoundedCornerShape(28.dp), ambientColor = Color(0x14000000), spotColor = Color(0x0F000000))
-            .background(Ink, RoundedCornerShape(28.dp))
+            .shadow(8.dp, RoundedCornerShape(28.dp), ambientColor = SoftLine, spotColor = SoftLine)
+            .background(WarmPanel, RoundedCornerShape(28.dp))
+            .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(28.dp))
             .clickable(onClick = onClick),
     ) {
         CoopBadge(modifier = Modifier.align(Alignment.TopEnd))
@@ -496,7 +497,7 @@ private fun CoopLeadingIcon() {
     Box(
         modifier = Modifier
             .size(54.dp)
-            .background(Color.White, CircleShape),
+            .background(Surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -523,7 +524,7 @@ private fun CoopContent(
         if (proposal == null) {
             Text(
                 text = "暂无约头计划",
-                color = Color.White,
+                color = Ink,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.sp,
@@ -535,7 +536,7 @@ private fun CoopContent(
         } else {
             Text(
                 text = "与${friendName}约头计划",
-                color = Color.White,
+                color = Ink,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.sp,
@@ -556,13 +557,13 @@ private fun SmallOutlinedLabel(text: String) {
     Box(
         modifier = Modifier
             .height(30.dp)
-            .background(Color(0xFF2A2A2A), RoundedCornerShape(15.dp))
+            .background(Surface, RoundedCornerShape(15.dp))
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            color = Color.White,
+            color = MutedInk,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.sp,

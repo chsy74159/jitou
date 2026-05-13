@@ -23,11 +23,15 @@ import com.jitou.app.ui.appointment.AppointmentRoute
 import com.jitou.app.ui.login.LoginScreen
 import com.jitou.app.ui.login.LoginViewModel
 import com.jitou.app.ui.profile.ProfileRoute
+import com.jitou.app.ui.theme.JitouThemeMode
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun JitouHomeRoute() {
+fun JitouHomeRoute(
+    themeMode: JitouThemeMode = JitouThemeMode.default,
+    onThemeModeChange: (JitouThemeMode) -> Unit = {},
+) {
     val context = LocalContext.current
     val loginViewModel: LoginViewModel = viewModel(
         factory = remember(context) { LoginViewModel.factory(context) },
@@ -145,6 +149,8 @@ fun JitouHomeRoute() {
                         onNicknameChange = viewModel::updateNickname,
                         onRefreshData = viewModel::refreshData,
                         isRefreshingData = uiState.isRefreshingData,
+                        themeMode = themeMode,
+                        onThemeModeChange = onThemeModeChange,
                         onLogout = {
                             navigateToScreen(JitouScreen.Home)
                             loginViewModel.signOut()

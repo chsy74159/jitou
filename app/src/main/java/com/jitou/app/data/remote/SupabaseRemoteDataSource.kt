@@ -68,14 +68,20 @@ class SupabaseRemoteDataSource(
 
     suspend fun upsertCurrentProfileNickname(nickname: String): RemoteProfile? {
         val currentUserId = currentUserId() ?: return null
+        val updatedAt = Instant.now().toString()
         client.from("profiles").upsert(
-            RemoteProfile(
-                id = currentUserId,
+            remoteProfileNicknameUpdate(
+                userId = currentUserId,
                 nickname = nickname,
-                updatedAt = Instant.now().toString(),
+                updatedAt = updatedAt,
             ),
         ) {
             onConflict = "id"
+        }
+        client.from("haircut_pair_members").update(
+            remotePairMemberDisplayNameUpdate(nickname),
+        ) {
+            filter { eq("user_id", currentUserId) }
         }
         return fetchCurrentProfile()
     }

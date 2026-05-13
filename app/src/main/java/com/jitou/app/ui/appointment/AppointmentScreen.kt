@@ -35,6 +35,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
@@ -61,6 +62,7 @@ import com.jitou.app.model.FriendAppointmentStatus
 import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.ProposalStatus
 import com.jitou.app.ui.theme.JitouTheme
+import com.jitou.app.ui.theme.jitouColors
 import com.jitou.app.ui.theme.jitouDatePickerColors
 import java.time.DayOfWeek
 import java.time.Instant
@@ -71,12 +73,20 @@ import java.time.format.DateTimeFormatter
 
 private val AppointmentDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
 private val AppointmentTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val PageBackground = Color(0xFFF8F7F2)
-private val InkColor = Color(0xFF171717)
-private val AccentYellow = Color(0xFFFFD84D)
-private val MutedInk = Color(0xFF72706A)
-private val WarmPanel = Color(0xFFF0ECE2)
-private val SoftLine = Color(0x14000000)
+private val PageBackground: Color
+    @Composable get() = MaterialTheme.jitouColors.background
+private val SurfaceColor: Color
+    @Composable get() = MaterialTheme.jitouColors.surface
+private val InkColor: Color
+    @Composable get() = MaterialTheme.jitouColors.ink
+private val AccentYellow: Color
+    @Composable get() = MaterialTheme.jitouColors.accent
+private val MutedInk: Color
+    @Composable get() = MaterialTheme.jitouColors.mutedInk
+private val WarmPanel: Color
+    @Composable get() = MaterialTheme.jitouColors.surfaceMuted
+private val SoftLine: Color
+    @Composable get() = MaterialTheme.jitouColors.line
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -388,7 +398,7 @@ private fun FriendStatusCard(
                 modifier = Modifier
                     .size(58.dp)
                     .background(AccentYellow, CircleShape)
-                    .border(2.dp, InkColor, CircleShape)
+                    .border(1.dp, SoftLine, CircleShape)
                     .padding(3.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -522,7 +532,7 @@ private fun DateStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, SoftLine, RoundedCornerShape(24.dp))
-                .background(Color.White, RoundedCornerShape(24.dp)),
+                .background(SurfaceColor, RoundedCornerShape(24.dp)),
         ) {
             DatePicker(state = pickerState, colors = datePickerColors, title = null, headline = null)
         }
@@ -621,7 +631,7 @@ private fun HistoryList(items: List<AppointmentHistoryItem>) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .background(SurfaceColor, RoundedCornerShape(22.dp))
                     .border(1.dp, SoftLine, RoundedCornerShape(22.dp))
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -662,7 +672,7 @@ private fun FramedPanel(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(28.dp))
+            .background(SurfaceColor, RoundedCornerShape(28.dp))
             .border(1.dp, SoftLine, RoundedCornerShape(28.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

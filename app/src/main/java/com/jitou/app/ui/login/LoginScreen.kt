@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,11 +37,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jitou.app.data.auth.AuthRepository
+import com.jitou.app.ui.theme.jitouColors
 
-private val LoginBackground = Color(0xFFF8F7F2)
-private val LoginInk = Color(0xFF171717)
-private val LoginYellow = Color(0xFFFFD84D)
-private val LoginMuted = Color(0xFF706D66)
+private val LoginBackground: Color
+    @Composable get() = MaterialTheme.jitouColors.background
+private val LoginSurface: Color
+    @Composable get() = MaterialTheme.jitouColors.surface
+private val LoginInk: Color
+    @Composable get() = MaterialTheme.jitouColors.ink
+private val LoginYellow: Color
+    @Composable get() = MaterialTheme.jitouColors.accent
+private val LoginMuted: Color
+    @Composable get() = MaterialTheme.jitouColors.mutedInk
+private val LoginLine: Color
+    @Composable get() = MaterialTheme.jitouColors.line
+private val LoginDanger: Color
+    @Composable get() = MaterialTheme.jitouColors.danger
 
 @Composable
 fun LoginScreen(
@@ -78,8 +90,8 @@ fun LoginScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color.White, RoundedCornerShape(24.dp))
-                            .border(3.dp, LoginInk, RoundedCornerShape(24.dp))
+                            .background(LoginSurface, RoundedCornerShape(24.dp))
+                            .border(1.dp, LoginLine, RoundedCornerShape(24.dp))
                             .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -112,7 +124,7 @@ fun LoginScreen(
                             ),
                         )
                         uiState.errorMessage?.let { message ->
-                            Text(message, color = Color(0xFFB3261E), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(message, color = LoginDanger, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = {
@@ -127,7 +139,7 @@ fun LoginScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = LoginYellow,
                                 contentColor = LoginInk,
-                                disabledContainerColor = Color(0xFFE5E0D3),
+                                disabledContainerColor = LoginLine,
                                 disabledContentColor = LoginMuted,
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),

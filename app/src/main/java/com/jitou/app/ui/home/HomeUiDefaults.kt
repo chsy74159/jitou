@@ -1,6 +1,9 @@
 package com.jitou.app.ui.home
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.jitou.app.ui.theme.jitouColors
 import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.ProposalStatus
 import java.time.Instant
@@ -10,14 +13,24 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 internal val DateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
-internal val HomeBackground = Color(0xFFF8F7F2)
-internal val Ink = Color(0xFF171717)
-internal val MutedInk = Color(0xFF72706A)
-internal val Yellow = Color(0xFFFFD84D)
-internal val Mint = Color(0xFFCFECE1)
-internal val Peach = Color(0xFFFFD8C9)
-internal val WarmPanel = Color(0xFFF0ECE2)
-internal val SoftLine = Color(0x14000000)
+internal val HomeBackground: Color
+    @Composable get() = MaterialTheme.jitouColors.background
+internal val Surface: Color
+    @Composable get() = MaterialTheme.jitouColors.surface
+internal val Ink: Color
+    @Composable get() = MaterialTheme.jitouColors.ink
+internal val MutedInk: Color
+    @Composable get() = MaterialTheme.jitouColors.mutedInk
+internal val Yellow: Color
+    @Composable get() = MaterialTheme.jitouColors.accent
+internal val Mint: Color
+    @Composable get() = MaterialTheme.jitouColors.sage
+internal val Peach: Color
+    @Composable get() = MaterialTheme.jitouColors.clay
+internal val WarmPanel: Color
+    @Composable get() = MaterialTheme.jitouColors.surfaceMuted
+internal val SoftLine: Color
+    @Composable get() = MaterialTheme.jitouColors.line
 
 internal fun HaircutProposal.statusLabel(): String = when (status) {
     ProposalStatus.PendingFriend -> "待确认"

@@ -12,6 +12,26 @@ data class RemoteProfile(
 )
 
 @Serializable
+internal data class RemoteProfileNicknameUpdate(
+    val id: String,
+    val nickname: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+internal fun remoteProfileNicknameUpdate(
+    userId: String,
+    nickname: String,
+    updatedAt: String,
+) = RemoteProfileNicknameUpdate(
+    id = userId,
+    nickname = nickname,
+    updatedAt = updatedAt,
+)
+
+internal fun remotePairMemberDisplayNameUpdate(nickname: String): Map<String, String> =
+    mapOf("display_name" to nickname)
+
+@Serializable
 data class RemoteHaircutPair(
     val id: String,
     val name: String,

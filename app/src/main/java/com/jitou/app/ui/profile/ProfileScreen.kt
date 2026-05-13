@@ -30,14 +30,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -65,17 +70,35 @@ import com.jitou.app.model.HaircutInterval
 import com.jitou.app.model.HaircutRecord
 import com.jitou.app.model.fakeHaircutRecords
 import com.jitou.app.ui.theme.JitouTheme
+import com.jitou.app.ui.theme.JitouThemeMode
+import com.jitou.app.ui.theme.jitouColors
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val ProfileBackground = Color(0xFFF8F7F2)
-private val ProfileInk = Color(0xFF171717)
-private val ProfileWarmPanel = Color(0xFFF0ECE2)
-private val ProfileMuted = Color(0xFF72706A)
-private val ProfileSoftLine = Color(0x14000000)
-private val ProfileAvatarLine = Color(0xFFD5D0C6)
+private val ProfileBackground: Color
+    @Composable get() = MaterialTheme.jitouColors.background
+private val ProfileSurface: Color
+    @Composable get() = MaterialTheme.jitouColors.surface
+private val ProfileInk: Color
+    @Composable get() = MaterialTheme.jitouColors.ink
+private val ProfileWarmPanel: Color
+    @Composable get() = MaterialTheme.jitouColors.surfaceMuted
+private val ProfileMuted: Color
+    @Composable get() = MaterialTheme.jitouColors.mutedInk
+private val ProfileSoftLine: Color
+    @Composable get() = MaterialTheme.jitouColors.line
+private val ProfileAvatarLine: Color
+    @Composable get() = MaterialTheme.jitouColors.accent.copy(alpha = 0.5f)
+private val ProfileAccent: Color
+    @Composable get() = MaterialTheme.jitouColors.accent
+private val ProfileAccentStrong: Color
+    @Composable get() = MaterialTheme.jitouColors.accentStrong
+private val ProfileSage: Color
+    @Composable get() = MaterialTheme.jitouColors.sage
+private val ProfileDanger: Color
+    @Composable get() = MaterialTheme.jitouColors.danger
 private val MonthDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd")
 private val HistoryDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH)
 
@@ -91,6 +114,8 @@ fun ProfileRoute(
     onNicknameChange: (String) -> Unit,
     onRefreshData: () -> Unit,
     isRefreshingData: Boolean,
+    themeMode: JitouThemeMode = JitouThemeMode.default,
+    onThemeModeChange: (JitouThemeMode) -> Unit = {},
     onLogout: () -> Unit,
 ) {
     val stats = ProfileStats.from(records)
@@ -119,6 +144,11 @@ fun ProfileRoute(
                     .padding(horizontal = 18.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                ProfileThemeMenu(
+                    themeMode = themeMode,
+                    onThemeModeChange = onThemeModeChange,
+                    modifier = Modifier.align(Alignment.End),
+                )
                 UserInfoCard(
                     nickname = nickname,
                     daysSinceLastHaircut = stats.daysSinceLastHaircut,
@@ -153,6 +183,72 @@ fun ProfileRoute(
 }
 
 @Composable
+private fun ProfileThemeMenu(
+    themeMode: JitouThemeMode,
+    onThemeModeChange: (JitouThemeMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier
+                .size(30.dp)
+                .background(ProfileWarmPanel, CircleShape)
+                .border(1.dp, ProfileSoftLine, CircleShape),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Palette,
+                contentDescription = "主题设置",
+                tint = ProfileAccentStrong,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = ProfileSurface,
+        ) {
+            JitouThemeMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = mode.displayLabel(),
+                            color = ProfileInk,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.sp,
+                        )
+                    },
+                    leadingIcon = {
+                        if (mode == themeMode) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = ProfileAccentStrong,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(18.dp))
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        onThemeModeChange(mode)
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun JitouThemeMode.displayLabel(): String = when (this) {
+    JitouThemeMode.Light -> "浅色"
+    JitouThemeMode.Dark -> "深色"
+    JitouThemeMode.System -> "跟随系统"
+}
+
+@Composable
 private fun UserInfoCard(
     nickname: String,
     daysSinceLastHaircut: Int?,
@@ -162,7 +258,7 @@ private fun UserInfoCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(top = 10.dp, bottom = 8.dp),
+            .padding(top = 0.dp, bottom = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -174,7 +270,7 @@ private fun UserInfoCard(
                 modifier = Modifier
                     .size(96.dp)
                     .border(2.dp, ProfileAvatarLine, CircleShape)
-                    .padding(4.dp),
+                    .padding(2.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
@@ -277,7 +373,7 @@ private fun EmptyHistoryState() {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 140.dp)
-            .background(Color.White, RoundedCornerShape(18.dp))
+            .background(ProfileSurface, RoundedCornerShape(18.dp))
             .border(1.dp, ProfileSoftLine, RoundedCornerShape(18.dp))
             .padding(18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -294,7 +390,7 @@ private fun HaircutHistoryRow(entry: HaircutHistoryEntry) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 54.dp)
-            .background(Color.White, RoundedCornerShape(16.dp))
+            .background(ProfileSurface, RoundedCornerShape(16.dp))
             .border(1.dp, ProfileSoftLine, RoundedCornerShape(16.dp))
             .padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -311,13 +407,13 @@ private fun HaircutHistoryRow(entry: HaircutHistoryEntry) {
         if (entry.isLatest) {
             Text(
                 text = "Latest",
-                color = Color(0xFF7C8AA5),
+                color = ProfileAccentStrong,
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.sp,
                 modifier = Modifier
-                    .background(Color(0xFFEFF2F8), RoundedCornerShape(14.dp))
+                    .background(ProfileSage, RoundedCornerShape(14.dp))
                     .padding(horizontal = 12.dp, vertical = 5.dp),
             )
         } else {
@@ -358,7 +454,7 @@ private fun AccountSettingsDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 nicknameError?.let { message ->
-                    Text(message, color = Color(0xFFB3261E), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(message, color = ProfileDanger, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 AccountActionButton(
                     text = "保存昵称",
@@ -374,7 +470,7 @@ private fun AccountSettingsDialog(
             }
         },
         shape = RoundedCornerShape(28.dp),
-        containerColor = Color.White,
+        containerColor = ProfileSurface,
     )
 }
 
@@ -438,7 +534,7 @@ private fun FeatureEntry(
         enabled = enabled,
         modifier = modifier.height(46.dp),
         shape = RoundedCornerShape(22.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ProfileInk),
+        colors = ButtonDefaults.buttonColors(containerColor = ProfileSurface, contentColor = ProfileInk),
         border = BorderStroke(1.dp, ProfileSoftLine),
         elevation = null,
     ) {
@@ -462,12 +558,12 @@ private fun ProfileStatsCard(
             Box(
                 modifier = Modifier
                     .size(38.dp)
-                    .background(Color(0xFFEAF0FA), CircleShape),
+                    .background(ProfileSage, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = nickname.take(2).uppercase(),
-                    color = Color(0xFF5577A8),
+                    color = ProfileAccentStrong,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.sp,
@@ -516,7 +612,7 @@ private fun CompactMetricTile(
     Column(
         modifier = modifier
             .heightIn(min = 84.dp)
-            .background(Color(0xFFF8F9FE), RoundedCornerShape(8.dp))
+            .background(ProfileWarmPanel, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
     ) {
@@ -530,7 +626,7 @@ private fun CompactMetricTile(
         )
         Text(
             value,
-            color = Color(0xFF5577A8),
+            color = ProfileAccentStrong,
             fontSize = if (value.length > 6) 17.sp else 20.sp,
             lineHeight = if (value.length > 6) 21.sp else 24.sp,
             fontWeight = FontWeight.Black,
@@ -606,7 +702,7 @@ private fun WeekdayBarChart(items: List<WeekdayFrequency>) {
                                 .fillMaxWidth(0.82f)
                                 .height(barHeight)
                                 .background(
-                                    if (item.count == 0) Color.Transparent else Color(0xFF5577A8),
+                                    if (item.count == 0) Color.Transparent else ProfileAccent,
                                     RoundedCornerShape(6.dp),
                                 ),
                         )
@@ -622,13 +718,15 @@ private fun WeekdayBarChart(items: List<WeekdayFrequency>) {
 @Composable
 private fun FramedCard(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color.White,
+    backgroundColor: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val cardColor = backgroundColor ?: ProfileSurface
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(backgroundColor, RoundedCornerShape(28.dp))
+            .background(cardColor, RoundedCornerShape(28.dp))
             .border(1.dp, ProfileSoftLine, RoundedCornerShape(28.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
