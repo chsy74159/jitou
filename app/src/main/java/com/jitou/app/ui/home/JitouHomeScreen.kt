@@ -45,10 +45,10 @@ internal fun JitouHomeScreen(
     val today = LocalDate.now()
     val sortedRecords = records.sortedByDescending { it.date }
     val lastRecord = sortedRecords.firstOrNull()
-    val daysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records, today) ?: 0
+    val daysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records, today)
     val stats = HaircutAnalytics.calculate(records)
     val nextDate = proposal?.proposedDate ?: today.plusDays(7)
-    val status = haircutStatus(daysSinceLast, stats.averageIntervalDays)
+    val status = haircutStatus(daysSinceLast ?: 0, stats.averageIntervalDays)
 
     Scaffold(contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)) { padding ->
         Column(
@@ -66,7 +66,7 @@ internal fun JitouHomeScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            AvatarHeroCard(
+            HairIllustrationHero(
                 daysSinceLast = daysSinceLast,
                 status = status,
                 reminder = reminder,

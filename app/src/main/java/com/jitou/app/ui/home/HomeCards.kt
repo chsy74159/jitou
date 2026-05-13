@@ -13,15 +13,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,6 +47,15 @@ import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.QueueState
 import com.jitou.app.model.ReminderUiState
 import java.time.LocalDate
+
+private val IllustrationPaperShape = GenericShape { size, _ ->
+    moveTo(size.width * 0.07f, size.height * 0.20f)
+    cubicTo(size.width * 0.19f, size.height * 0.02f, size.width * 0.74f, size.height * -0.01f, size.width * 0.92f, size.height * 0.18f)
+    cubicTo(size.width * 1.01f, size.height * 0.30f, size.width * 0.99f, size.height * 0.80f, size.width * 0.82f, size.height * 0.93f)
+    cubicTo(size.width * 0.62f, size.height * 1.07f, size.width * 0.20f, size.height * 1.01f, size.width * 0.07f, size.height * 0.82f)
+    cubicTo(size.width * -0.03f, size.height * 0.66f, size.width * -0.03f, size.height * 0.36f, size.width * 0.07f, size.height * 0.20f)
+    close()
+}
 
 @Composable
 internal fun HomeTopBar(onProfileClick: () -> Unit) {
@@ -102,69 +115,143 @@ private fun ProfileChip(onClick: () -> Unit) {
     }
 }
 
+internal data class HairIllustrationState(
+    val imageRes: Int,
+    val bubbleText: String,
+    val daysText: String,
+)
+
+internal fun hairIllustrationState(daysSinceLast: Int?, status: String): HairIllustrationState {
+    val bubbleText = if (daysSinceLast == null) "先记一剪" else status
+    val imageRes = when (bubbleText) {
+        "先记一剪", "清爽得很" -> R.drawable.hair_state_001
+        "还撑得住" -> R.drawable.hair_state_002
+        "差不多该约了，几时头" -> R.drawable.hair_state_003
+        "是时候头了" -> R.drawable.hair_state_004
+        else -> R.drawable.hair_state_002
+    }
+    return HairIllustrationState(
+        imageRes = imageRes,
+        bubbleText = bubbleText,
+        daysText = daysSinceLast?.toString() ?: "--",
+    )
+}
+
 @Composable
-internal fun AvatarHeroCard(
-    daysSinceLast: Int,
+internal fun HairIllustrationHero(
+    daysSinceLast: Int?,
     status: String,
     reminder: ReminderUiState,
     onReminderClick: () -> Unit,
 ) {
+    val illustration = hairIllustrationState(daysSinceLast, status)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(318.dp)
-            .shadow(12.dp, RoundedCornerShape(36.dp), ambientColor = SoftLine, spotColor = SoftLine)
-            .background(Surface, RoundedCornerShape(36.dp))
-            .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(36.dp)),
+            .height(316.dp),
     ) {
-        HeroTag(
-            text = "TODAY",
-            containerColor = Ink,
-            textColor = Surface,
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 18.dp, start = 18.dp),
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .height(286.dp)
+                .padding(bottom = 18.dp)
+                .background(IllustrationPaper, IllustrationPaperShape),
         )
-        HeroTag(
-            text = "SOFT CUT",
-            containerColor = Mint,
-            textColor = Ink,
+        Image(
+            painter = painterResource(id = illustration.imageRes),
+            contentDescription = "当前头毛插画",
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .height(286.dp)
+                .padding(bottom = 18.dp),
+            contentScale = ContentScale.Fit,
+        )
+        StatusSpeechBubble(
+            text = illustration.bubbleText,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 18.dp, end = 18.dp),
+                .padding(top = 10.dp, end = 2.dp),
         )
-        HeroAvatar(modifier = Modifier.align(Alignment.TopCenter))
-        DaysCounter(
-            daysSinceLast = daysSinceLast,
+        DaysSticker(
+            daysText = illustration.daysText,
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 18.dp, top = 56.dp),
+                .align(Alignment.TopStart)
+                .offset(x = 6.dp, y = 118.dp),
         )
-        ReminderStatusBlock(
+        ReminderChip(
             reminder = reminder,
-            status = status,
             onReminderClick = onReminderClick,
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 2.dp, bottom = 2.dp),
         )
     }
 }
 
 @Composable
-private fun HeroTag(
+private fun StatusSpeechBubble(
     text: String,
-    containerColor: Color,
-    textColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Box(
+        modifier = modifier,
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .background(Surface, RoundedCornerShape(20.dp))
+                .border(width = 1.dp, color = IllustrationInk, shape = RoundedCornerShape(20.dp))
+                .padding(horizontal = 14.dp, vertical = 9.dp),
+        ) {
+            Text(
+                text = text,
+                color = IllustrationInk,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = 24.dp)
+                .size(12.dp)
+                .rotate(45f)
+                .background(Surface, RoundedCornerShape(2.dp))
+                .border(width = 1.dp, color = IllustrationInk, shape = RoundedCornerShape(2.dp)),
+        )
+    }
+}
+
+@Composable
+private fun DaysSticker(
+    daysText: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
         modifier = modifier
-            .background(containerColor, RoundedCornerShape(18.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .rotate(-5f)
+            .background(Yellow, RoundedCornerShape(24.dp))
+            .border(width = 2.dp, color = IllustrationInk, shape = RoundedCornerShape(24.dp))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = text,
-            color = textColor,
-            fontSize = 10.sp,
+            text = daysText,
+            color = IllustrationInk,
+            fontSize = if (daysText.length > 2) 30.sp else 40.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+        )
+        Text(
+            text = "天没剪",
+            color = IllustrationInk,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 0.sp,
         )
@@ -172,71 +259,36 @@ private fun HeroTag(
 }
 
 @Composable
-private fun HeroAvatar(modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(id = R.drawable.cartoon_avatar),
-        contentDescription = "卡通头像",
-        modifier = modifier
-            .padding(top = 54.dp)
-            .size(178.dp)
-            .clip(RoundedCornerShape(42.dp)),
-        contentScale = ContentScale.Crop,
-    )
-}
-
-@Composable
-private fun DaysCounter(
-    daysSinceLast: Int,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(width = 108.dp, height = 108.dp)
-            .background(Yellow, RoundedCornerShape(30.dp))
-            .border(width = 2.dp, color = Ink, shape = RoundedCornerShape(30.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = daysSinceLast.toString(),
-                color = Ink,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.sp,
-            )
-            Text(
-                text = "天没剪",
-                color = Ink,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.sp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReminderStatusBlock(
+private fun ReminderChip(
     reminder: ReminderUiState,
-    status: String,
     onReminderClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier = modifier
-            .fillMaxWidth()
-            .background(WarmPanel, RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
-            .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .height(36.dp)
+            .background(WarmPanel, RoundedCornerShape(18.dp))
+            .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(18.dp))
+            .clickable(onClick = onReminderClick)
+            .padding(start = 10.dp, end = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = if (reminder.enabled) "提醒 ${reminder.time.toReminderText()}" else "提醒已关闭",
-            color = MutedInk,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.sp,
+        Icon(
+            imageVector = if (reminder.enabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsOff,
+            contentDescription = null,
+            modifier = Modifier.size(17.dp),
+            tint = Ink,
         )
-        StatusPill(status = status, onClick = onReminderClick)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = if (reminder.enabled) "提醒 ${reminder.time.toReminderText()}" else "提醒关闭",
+            color = Ink,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -304,43 +356,6 @@ private fun SummaryCapsule(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun StatusPill(status: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .background(Surface, RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "头毛状态：$status",
-            color = Ink,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .background(Yellow, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = Ink,
-            )
-        }
     }
 }
 

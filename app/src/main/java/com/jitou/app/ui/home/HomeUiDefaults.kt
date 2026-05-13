@@ -31,6 +31,8 @@ internal val WarmPanel: Color
     @Composable get() = MaterialTheme.jitouColors.surfaceMuted
 internal val SoftLine: Color
     @Composable get() = MaterialTheme.jitouColors.line
+internal val IllustrationPaper = Color(0xFFFFFEFB)
+internal val IllustrationInk = Color(0xFF1C1A17)
 
 internal fun HaircutProposal.statusLabel(): String = when (status) {
     ProposalStatus.PendingFriend -> "待确认"
