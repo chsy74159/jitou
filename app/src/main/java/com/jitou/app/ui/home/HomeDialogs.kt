@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jitou.app.model.ReminderUiState
+import com.jitou.app.ui.theme.jitouDatePickerColors
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlin.math.roundToInt
@@ -71,6 +72,7 @@ internal fun RecordHaircutDialog(
     onConfirm: (LocalDate) -> Unit,
 ) {
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = LocalDate.now().toPickerMillis())
+    val datePickerColors = jitouDatePickerColors()
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -89,8 +91,10 @@ internal fun RecordHaircutDialog(
                 Text("取消")
             }
         },
+        tonalElevation = 0.dp,
+        colors = datePickerColors,
     ) {
-        DatePicker(state = pickerState)
+        DatePicker(state = pickerState, colors = datePickerColors)
     }
 }
 

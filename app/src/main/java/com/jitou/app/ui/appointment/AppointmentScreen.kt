@@ -61,6 +61,7 @@ import com.jitou.app.model.FriendAppointmentStatus
 import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.ProposalStatus
 import com.jitou.app.ui.theme.JitouTheme
+import com.jitou.app.ui.theme.jitouDatePickerColors
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -508,6 +509,7 @@ private fun DateStep(
     onNext: () -> Unit,
 ) {
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.toPickerMillis())
+    val datePickerColors = jitouDatePickerColors()
     LaunchedEffect(pickerState.selectedDateMillis) {
         pickerState.selectedDateMillis?.let { onDateChange(it.toPickerDate()) }
     }
@@ -522,7 +524,7 @@ private fun DateStep(
                 .border(1.dp, SoftLine, RoundedCornerShape(24.dp))
                 .background(Color.White, RoundedCornerShape(24.dp)),
         ) {
-            DatePicker(state = pickerState, title = null, headline = null)
+            DatePicker(state = pickerState, colors = datePickerColors, title = null, headline = null)
         }
         Text("推荐日期：", color = InkColor, fontSize = 13.sp, fontWeight = FontWeight.Black)
         RecommendationRow("${cycleDate.format(AppointmentDateFormatter)}，按你的平均周期") { onDateChange(cycleDate) }
