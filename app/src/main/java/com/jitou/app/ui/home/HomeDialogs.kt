@@ -9,11 +9,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -21,6 +23,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -70,31 +76,97 @@ internal fun QueueConfirmDialog(
 internal fun RecordHaircutDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit,
+    pastDatesOnly: Boolean = false,
 ) {
-    val pickerState = rememberDatePickerState(initialSelectedDateMillis = LocalDate.now().toPickerMillis())
-    val datePickerColors = jitouDatePickerColors()
+    val today = LocalDate.now()
+    val initialDate = if (pastDatesOnly) today.minusDays(1) else today
+    val selectableDates = remember(pastDatesOnly, today) {
+        if (!pastDatesOnly) {
+            DatePickerDefaults.AllDates
+        } else {
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis.toPickerDate().isBefore(today)
 
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val selected = pickerState.selectedDateMillis?.toPickerDate() ?: LocalDate.now()
-                    onConfirm(selected)
-                },
-            ) {
-                Text("记录")
+                override fun isSelectableYear(year: Int): Boolean = year <= today.year
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
+        }
+    }
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDate.toPickerMillis(),
+        selectableDates = selectableDates,
+    )
+    val datePickerColors = jitouDatePickerColors()
+    var pendingConfirmationDate by remember { mutableStateOf<LocalDate?>(null) }
+    val selectedDate = pickerState.selectedDateMillis?.toPickerDate()
+    val canSubmit = selectedDate != null && (!pastDatesOnly || selectedDate.isBefore(today))
+
+    if (pendingConfirmationDate == null) {
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(
+                    enabled = canSubmit,
+                    onClick = {
+                        pendingConfirmationDate = selectedDate
+                    },
+                ) {
+                    Text("记录")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("取消")
+                }
+            },
+            tonalElevation = 0.dp,
+            colors = datePickerColors,
+        ) {
+            Column {
+                DatePicker(state = pickerState, colors = datePickerColors)
+                if (pastDatesOnly) {
+                    Text(
+                        text = "补录只能选择今天之前的日期",
+                        color = MutedInk,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                    )
+                }
             }
-        },
-        tonalElevation = 0.dp,
-        colors = datePickerColors,
-    ) {
-        DatePicker(state = pickerState, colors = datePickerColors)
+        }
+    }
+
+    pendingConfirmationDate?.let { date ->
+        AlertDialog(
+            onDismissRequest = { pendingConfirmationDate = null },
+            title = {
+                Text(
+                    text = "确认补录头期？",
+                    color = Ink,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.sp,
+                )
+            },
+            text = {
+                Text(
+                    text = "将补录 ${date.format(DateFormatter)} 这次剪头记录。",
+                    color = MutedInk,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onConfirm(date) }) {
+                    Text("确认提交", fontWeight = FontWeight.Black)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingConfirmationDate = null }) {
+                    Text("返回修改", fontWeight = FontWeight.Bold)
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = Color.White,
+        )
     }
 }
 

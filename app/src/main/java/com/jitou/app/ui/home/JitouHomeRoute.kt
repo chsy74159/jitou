@@ -68,6 +68,7 @@ fun JitouHomeRoute() {
         derivedStateOf { JitouScreen.fromPageIndex(navPosition.roundToInt()) }
     }
     var showRecordDialog by remember { mutableStateOf(false) }
+    var recordDialogPastDatesOnly by remember { mutableStateOf(false) }
     var showReminderSheet by remember { mutableStateOf(false) }
     var showJoinQueueDialog by remember { mutableStateOf(false) }
     var showCancelQueueDialog by remember { mutableStateOf(false) }
@@ -94,7 +95,10 @@ fun JitouHomeRoute() {
                         reminder = reminder,
                         isQueueing = isQueueing,
                         friendName = friendName,
-                        onRecordClick = { showRecordDialog = true },
+                        onRecordClick = {
+                            recordDialogPastDatesOnly = false
+                            showRecordDialog = true
+                        },
                         onAppointmentClick = { navigateToScreen(JitouScreen.Appointment) },
                         onProfileClick = { navigateToScreen(JitouScreen.Profile) },
                         onQueueClick = {
@@ -133,7 +137,10 @@ fun JitouHomeRoute() {
                         nicknameError = uiState.nicknameError,
                         isActive = screen == JitouScreen.Profile,
                         onBack = { navigateToScreen(JitouScreen.Home) },
-                        onAddRecord = { showRecordDialog = true },
+                        onAddRecord = {
+                            recordDialogPastDatesOnly = true
+                            showRecordDialog = true
+                        },
                         onReminderClick = { showReminderSheet = true },
                         onNicknameChange = viewModel::updateNickname,
                         onRefreshData = viewModel::refreshData,
@@ -157,10 +164,15 @@ fun JitouHomeRoute() {
 
     if (showRecordDialog) {
         RecordHaircutDialog(
-            onDismiss = { showRecordDialog = false },
+            pastDatesOnly = recordDialogPastDatesOnly,
+            onDismiss = {
+                showRecordDialog = false
+                recordDialogPastDatesOnly = false
+            },
             onConfirm = { date ->
                 viewModel.addHaircutRecord(date)
                 showRecordDialog = false
+                recordDialogPastDatesOnly = false
             },
         )
     }

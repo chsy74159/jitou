@@ -27,8 +27,9 @@ internal fun HaircutProposal.statusLabel(): String = when (status) {
 
 internal fun haircutStatus(daysSinceLast: Int, averageIntervalDays: Int): String = when {
     averageIntervalDays == 0 -> "先记一剪"
-    daysSinceLast >= averageIntervalDays + 5 -> "该剪了"
-    daysSinceLast >= averageIntervalDays - 8 -> "差不多该约了"
+    daysSinceLast <= 10 -> "清爽得很"
+    daysSinceLast >= averageIntervalDays - 1 -> "是时候头了"
+    daysSinceLast >= averageIntervalDays - 8 -> "差不多该约了，几时头"
     else -> "还撑得住"
 }
 
