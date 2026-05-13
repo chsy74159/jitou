@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,12 +49,27 @@ import com.jitou.app.model.QueueState
 import com.jitou.app.model.ReminderUiState
 import java.time.LocalDate
 
-private val IllustrationPaperShape = GenericShape { size, _ ->
-    moveTo(size.width * 0.07f, size.height * 0.20f)
-    cubicTo(size.width * 0.19f, size.height * 0.02f, size.width * 0.74f, size.height * -0.01f, size.width * 0.92f, size.height * 0.18f)
-    cubicTo(size.width * 1.01f, size.height * 0.30f, size.width * 0.99f, size.height * 0.80f, size.width * 0.82f, size.height * 0.93f)
-    cubicTo(size.width * 0.62f, size.height * 1.07f, size.width * 0.20f, size.height * 1.01f, size.width * 0.07f, size.height * 0.82f)
-    cubicTo(size.width * -0.03f, size.height * 0.66f, size.width * -0.03f, size.height * 0.36f, size.width * 0.07f, size.height * 0.20f)
+internal const val SpeechBubbleTailAnchorFraction = 0.24f
+internal const val SpeechBubbleTailDepthPx = 18f
+
+private val SpeechBubbleShape = GenericShape { size, _ ->
+    val tailDepth = SpeechBubbleTailDepthPx.coerceAtMost(size.height * 0.28f)
+    val bodyBottom = size.height - tailDepth
+    val radius = (bodyBottom * 0.42f).coerceAtMost(22f)
+    val tailCenter = size.width * SpeechBubbleTailAnchorFraction
+
+    moveTo(radius, 0f)
+    cubicTo(size.width * 0.30f, -3f, size.width * 0.67f, -2f, size.width - radius, 0f)
+    quadraticTo(size.width, 0f, size.width, radius)
+    lineTo(size.width, bodyBottom - radius)
+    quadraticTo(size.width, bodyBottom, size.width - radius, bodyBottom)
+    lineTo(tailCenter + 12f, bodyBottom)
+    quadraticTo(tailCenter + 3f, bodyBottom + tailDepth * 0.72f, tailCenter - 10f, size.height)
+    quadraticTo(tailCenter - 5f, bodyBottom + tailDepth * 0.26f, tailCenter - 20f, bodyBottom)
+    lineTo(radius, bodyBottom)
+    quadraticTo(0f, bodyBottom, 0f, bodyBottom - radius)
+    lineTo(0f, radius)
+    quadraticTo(0f, 0f, radius, 0f)
     close()
 }
 
@@ -117,6 +133,7 @@ private fun ProfileChip(onClick: () -> Unit) {
 
 internal data class HairIllustrationState(
     val imageRes: Int,
+    val darkImageRes: Int,
     val bubbleText: String,
     val daysText: String,
 )
@@ -130,12 +147,23 @@ internal fun hairIllustrationState(daysSinceLast: Int?, status: String): HairIll
         "是时候头了" -> R.drawable.hair_state_004
         else -> R.drawable.hair_state_002
     }
+    val darkImageRes = when (imageRes) {
+        R.drawable.hair_state_001 -> R.drawable.hair_state_001_dark
+        R.drawable.hair_state_002 -> R.drawable.hair_state_002_dark
+        R.drawable.hair_state_003 -> R.drawable.hair_state_003_dark
+        R.drawable.hair_state_004 -> R.drawable.hair_state_004_dark
+        else -> R.drawable.hair_state_002_dark
+    }
     return HairIllustrationState(
         imageRes = imageRes,
+        darkImageRes = darkImageRes,
         bubbleText = bubbleText,
         daysText = daysSinceLast?.toString() ?: "--",
     )
 }
+
+internal fun hairIllustrationImageRes(imageRes: Int, darkImageRes: Int, background: Color): Int =
+    if (background.luminance() < 0.5f) darkImageRes else imageRes
 
 @Composable
 internal fun HairIllustrationHero(
@@ -145,22 +173,15 @@ internal fun HairIllustrationHero(
     onReminderClick: () -> Unit,
 ) {
     val illustration = hairIllustrationState(daysSinceLast, status)
+    val imageRes = hairIllustrationImageRes(illustration.imageRes, illustration.darkImageRes, HomeBackground)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(316.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth()
-                .height(286.dp)
-                .padding(bottom = 18.dp)
-                .background(IllustrationPaper, IllustrationPaperShape),
-        )
         Image(
-            painter = painterResource(id = illustration.imageRes),
+            painter = painterResource(id = imageRes),
             contentDescription = "当前头毛插画",
             modifier = Modifier
                 .align(Alignment.Center)
@@ -197,33 +218,19 @@ private fun StatusSpeechBubble(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .background(Surface, SpeechBubbleShape)
+            .border(width = 1.dp, color = Ink, shape = SpeechBubbleShape)
+            .padding(start = 15.dp, top = 9.dp, end = 15.dp, bottom = 20.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .padding(bottom = 6.dp)
-                .background(Surface, RoundedCornerShape(20.dp))
-                .border(width = 1.dp, color = IllustrationInk, shape = RoundedCornerShape(20.dp))
-                .padding(horizontal = 14.dp, vertical = 9.dp),
-        ) {
-            Text(
-                text = text,
-                color = IllustrationInk,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 24.dp)
-                .size(12.dp)
-                .rotate(45f)
-                .background(Surface, RoundedCornerShape(2.dp))
-                .border(width = 1.dp, color = IllustrationInk, shape = RoundedCornerShape(2.dp)),
+        Text(
+            text = text,
+            color = Ink,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -237,20 +244,20 @@ private fun DaysSticker(
         modifier = modifier
             .rotate(-5f)
             .background(Yellow, RoundedCornerShape(24.dp))
-            .border(width = 2.dp, color = IllustrationInk, shape = RoundedCornerShape(24.dp))
+            .border(width = 2.dp, color = Ink, shape = RoundedCornerShape(24.dp))
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = daysText,
-            color = IllustrationInk,
+            color = Ink,
             fontSize = if (daysText.length > 2) 30.sp else 40.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 0.sp,
         )
         Text(
             text = "天没剪",
-            color = IllustrationInk,
+            color = Ink,
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 0.sp,
