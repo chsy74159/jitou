@@ -150,7 +150,7 @@ object HaircutNotificationScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, ChannelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("几头")
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
