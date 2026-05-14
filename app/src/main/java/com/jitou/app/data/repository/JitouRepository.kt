@@ -97,6 +97,29 @@ class JitouRepository(
         runCatching { syncRepository?.pushPendingLocal() }
     }
 
+    suspend fun completeActiveProposal(note: String? = null) {
+        val active = proposalDao.getActive(ActiveProposalId) ?: return
+        val updatedAt = nowMillis()
+        haircutRecordDao.upsert(
+            HaircutRecord(
+                id = "record-${System.currentTimeMillis()}",
+                date = LocalDate.ofEpochDay(active.proposedDateEpochDay),
+                note = note,
+            ).toEntity(
+                updatedAtMillis = updatedAt,
+                syncState = SyncState.PENDING_CREATE,
+            ),
+        )
+        proposalDao.upsert(
+            active.copy(
+                updatedAtMillis = updatedAt,
+                deletedAtMillis = null,
+                syncState = SyncState.PENDING_COMPLETE.name,
+            ),
+        )
+        runCatching { syncRepository?.pushPendingLocal() }
+    }
+
     suspend fun setActiveProposal(proposal: HaircutProposal?) {
         if (proposal == null) {
             val active = proposalDao.getActive(ActiveProposalId)

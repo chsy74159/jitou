@@ -74,6 +74,7 @@ enum class SyncState {
     PENDING_CREATE,
     PENDING_UPDATE,
     PENDING_DELETE,
+    PENDING_COMPLETE,
 }
 
 fun HaircutRecordEntity.toDomain(): HaircutRecord = HaircutRecord(

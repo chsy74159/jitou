@@ -105,8 +105,7 @@ class JitouHomeViewModel(
 
     fun completeFriendHaircut(date: LocalDate) {
         viewModelScope.launch {
-            repository.addHaircutRecord(date, note = "和朋友一起")
-            repository.setActiveProposal(null)
+            repository.completeActiveProposal(note = "和朋友一起")
             scheduleHaircutNotifications()
             reduceQueue(QueueEvent.RecordedHaircut)
         }

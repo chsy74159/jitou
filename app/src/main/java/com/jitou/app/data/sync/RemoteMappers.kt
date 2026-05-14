@@ -24,6 +24,35 @@ fun parseRemoteTimestamp(value: String?): Long? = value?.let {
 fun planStatusForCurrentUser(proposerId: String, currentUserId: String): ProposalStatus =
     if (proposerId == currentUserId) ProposalStatus.PendingFriend else ProposalStatus.PendingMe
 
+fun jointPlanStatusForSyncState(syncState: SyncState, localStatus: String): String = when (syncState) {
+    SyncState.PENDING_DELETE -> "cancelled"
+    SyncState.PENDING_COMPLETE -> "completed"
+    else -> when (localStatus) {
+        ProposalStatus.Confirmed.name -> "confirmed"
+        else -> "pending"
+    }
+}
+
+fun completedJointPlan(
+    id: String,
+    pairId: String,
+    proposerId: String,
+    proposedAt: String,
+    reminderDaysBefore: Int,
+    completedBy: String,
+    completedAt: String,
+): RemoteJointHaircutPlan = RemoteJointHaircutPlan(
+    id = id,
+    pairId = pairId,
+    proposerId = proposerId,
+    proposedAt = proposedAt,
+    status = "completed",
+    completedBy = completedBy,
+    completedAt = completedAt,
+    reminderDaysBefore = reminderDaysBefore,
+    updatedAt = completedAt,
+)
+
 fun RemoteHaircutRecord.toLocalEntity(existingId: String? = null): HaircutRecordEntity = HaircutRecordEntity(
     id = existingId ?: id,
     dateEpochDay = LocalDate.parse(haircutDate).toEpochDay(),

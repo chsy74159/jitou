@@ -118,6 +118,19 @@ class SupabaseRemoteDataSource(
         }
     }
 
+    suspend fun completeJointPlan(planId: String, currentUserId: String, updatedAt: String) {
+        client.from("joint_haircut_plans").update(
+            mapOf(
+                "status" to "completed",
+                "completed_by" to currentUserId,
+                "completed_at" to updatedAt,
+                "updated_at" to updatedAt,
+            ),
+        ) {
+            filter { eq("id", planId) }
+        }
+    }
+
     suspend fun upsertReminderPreference(preference: RemoteReminderPreference) {
         client.from("reminder_preferences").upsert(preference) {
             onConflict = "user_id"

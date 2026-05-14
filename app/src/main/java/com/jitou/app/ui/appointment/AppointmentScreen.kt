@@ -187,15 +187,6 @@ fun AppointmentRoute(
                 },
                 onComplete = {
                     proposal?.let {
-                        onHistoryAdd(
-                            AppointmentHistoryItem(
-                                id = "history-${System.currentTimeMillis()}",
-                                date = it.proposedDate,
-                                time = it.proposedTime,
-                                companionName = friendName,
-                                result = "已完成",
-                            ),
-                        )
                         onCompleteHaircut(it.proposedDate)
                     }
                 },

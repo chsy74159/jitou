@@ -3,6 +3,7 @@ package com.jitou.app.data.sync
 import androidx.room.withTransaction
 import com.jitou.app.data.local.ActiveProposalId
 import com.jitou.app.data.local.AppointmentHistoryEntity
+import com.jitou.app.data.local.AppointmentProposalEntity
 import com.jitou.app.data.local.JitouDatabase
 import com.jitou.app.data.local.ReminderSettingsId
 import com.jitou.app.data.local.SyncMetadataEntity
@@ -13,6 +14,7 @@ import com.jitou.app.data.remote.RemoteJointHaircutPlan
 import com.jitou.app.data.remote.RemoteReminderPreference
 import com.jitou.app.data.remote.SupabaseRemoteDataSource
 import com.jitou.app.data.remote.toRemoteTimestamp
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class SyncRepository(
@@ -88,17 +90,32 @@ class SyncRepository(
             if (pairId == null) return@forEach
             val remoteId = local.remoteId ?: UUID.randomUUID().toString()
             val localUpdatedAt = local.updatedAtMillis.toRemoteTimestamp()
-            val status = when (SyncState.valueOf(local.syncState)) {
-                SyncState.PENDING_DELETE -> "cancelled"
-                else -> when (local.status) {
-                    "Confirmed" -> "confirmed"
-                    else -> "pending"
-                }
-            }
+            val status = jointPlanStatusForSyncState(
+                syncState = SyncState.valueOf(local.syncState),
+                localStatus = local.status,
+            )
             if (status == "cancelled") {
                 if (local.remoteId != null) {
                     remote.cancelJointPlan(local.remoteId, currentUserId, localUpdatedAt)
                 }
+                proposalDao.clear()
+            } else if (status == "completed") {
+                if (local.remoteId != null) {
+                    remote.completeJointPlan(local.remoteId, currentUserId, localUpdatedAt)
+                } else {
+                    remote.upsertJointPlan(
+                        completedJointPlan(
+                            id = remoteId,
+                            pairId = pairId,
+                            proposerId = currentUserId,
+                            proposedAt = proposedAtTimestamp(local.proposedDateEpochDay, local.proposedMinuteOfDay),
+                            reminderDaysBefore = local.reminderDaysBefore,
+                            completedBy = currentUserId,
+                            completedAt = localUpdatedAt,
+                        ),
+                    )
+                }
+                historyDao.upsert(local.toCompletedHistoryEntity(remoteId))
                 proposalDao.clear()
             } else if (status == "confirmed" && local.remoteId != null) {
                 remote.confirmJointPlan(local.remoteId, currentUserId, localUpdatedAt)
@@ -252,7 +269,7 @@ class SyncRepository(
         members: List<com.jitou.app.data.remote.RemoteHaircutPairMember>,
         currentUserId: String,
     ): AppointmentHistoryEntity {
-        val proposedDateTime = java.time.OffsetDateTime.parse(proposedAt).toLocalDateTime()
+        val proposedDateTime = OffsetDateTime.parse(proposedAt).toLocalDateTime()
         val collaboratorName = members
             .firstOrNull { it.pairId == pairId && it.userId != currentUserId }
             ?.displayName
@@ -269,6 +286,19 @@ class SyncRepository(
             syncState = SyncState.SYNCED.name,
         )
     }
+
+    private fun AppointmentProposalEntity.toCompletedHistoryEntity(completedRemoteId: String): AppointmentHistoryEntity =
+        AppointmentHistoryEntity(
+            id = "plan-$completedRemoteId",
+            dateEpochDay = proposedDateEpochDay,
+            minuteOfDay = proposedMinuteOfDay,
+            companionName = proposerName.takeUnless { it == "我" } ?: "XX",
+            result = "已完成",
+            remoteId = completedRemoteId,
+            updatedAtMillis = updatedAtMillis,
+            deletedAtMillis = null,
+            syncState = SyncState.SYNCED.name,
+        )
 
     private fun minuteOfDayToTimeString(minuteOfDay: Int): String {
         val hour = minuteOfDay / 60
