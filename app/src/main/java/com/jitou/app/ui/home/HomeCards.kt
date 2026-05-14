@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.EditCalendar
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -71,8 +72,19 @@ private val SpeechBubbleShape = GenericShape { size, _ ->
     close()
 }
 
+internal fun getAvatarResourceByDays(daysSinceLast: Int?): Int {
+    if (daysSinceLast == null) return R.drawable.avatar_days_0_5
+    return when {
+        daysSinceLast <= 5 -> R.drawable.avatar_days_0_5
+        daysSinceLast <= 14 -> R.drawable.avatar_days_6_14
+        daysSinceLast <= 24 -> R.drawable.avatar_days_15_24
+        daysSinceLast <= 30 -> R.drawable.avatar_days_25_30
+        else -> R.drawable.avatar_days_over_30
+    }
+}
+
 @Composable
-internal fun HomeTopBar(onProfileClick: () -> Unit) {
+internal fun HomeTopBar(onProfileClick: () -> Unit, daysSinceLast: Int?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -96,12 +108,12 @@ internal fun HomeTopBar(onProfileClick: () -> Unit) {
                 letterSpacing = 0.sp,
             )
         }
-        ProfileChip(onClick = onProfileClick)
+        ProfileChip(onClick = onProfileClick, daysSinceLast = daysSinceLast)
     }
 }
 
 @Composable
-private fun ProfileChip(onClick: () -> Unit) {
+private fun ProfileChip(onClick: () -> Unit, daysSinceLast: Int?) {
     Row(
         modifier = Modifier
             .height(38.dp)
@@ -112,7 +124,7 @@ private fun ProfileChip(onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Image(
-            painter = painterResource(id = R.drawable.cartoon_avatar),
+            painter = painterResource(id = getAvatarResourceByDays(daysSinceLast)),
             contentDescription = null,
             modifier = Modifier
                 .size(26.dp)
@@ -187,13 +199,19 @@ internal fun HairIllustrationHero(
                 .padding(bottom = 18.dp),
             contentScale = ContentScale.Fit,
         )
-        StatusSpeechBubble(
-            text = illustration.bubbleText,
+        Box(
             modifier = Modifier
+                .fillMaxWidth(0.5f)
                 .align(Alignment.TopEnd)
                 .offset(y = (-6).dp)
-                .padding(end = 2.dp),
-        )
+        ) {
+            StatusSpeechBubble(
+                text = illustration.bubbleText,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = 48.dp)
+            )
+        }
         DaysSticker(
             daysText = illustration.daysText,
             modifier = Modifier
@@ -424,7 +442,7 @@ internal fun PrimaryActionRow(
                 onClick = onQueueClick,
             )
             SoftActionButton(
-                text = "记录剪头",
+                text = "剪头打卡",
                 containerColor = Yellow,
                 modifier = Modifier.weight(1.25f),
                 onClick = onNowClick,
@@ -444,6 +462,7 @@ internal fun PrimaryActionRow(
 internal fun CoopPanel(
     proposal: HaircutProposal?,
     friendName: String,
+    friendDaysSinceLast: Int?,
     showFriendQueueNotice: Boolean,
     onClick: () -> Unit,
 ) {
@@ -458,14 +477,21 @@ internal fun CoopPanel(
     ) {
         CoopBadge(modifier = Modifier.align(Alignment.TopEnd))
 
+        CoopLeadingIcon(
+            hasProposal = proposal != null,
+            friendName = friendName,
+            friendDaysSinceLast = friendDaysSinceLast,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = 18.dp)
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 18.dp, end = 16.dp, top = 30.dp, bottom = 18.dp),
+                .padding(start = 88.dp, end = 16.dp, top = 30.dp, bottom = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CoopLeadingIcon()
-            Spacer(modifier = Modifier.width(16.dp))
             CoopContent(
                 proposal = proposal,
                 friendName = friendName,
@@ -496,19 +522,48 @@ private fun CoopBadge(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CoopLeadingIcon() {
+private fun CoopLeadingIcon(
+    hasProposal: Boolean,
+    friendName: String,
+    friendDaysSinceLast: Int?,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(54.dp)
             .background(Surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = Icons.Rounded.Groups,
-            contentDescription = null,
-            modifier = Modifier.size(28.dp),
-            tint = Ink,
-        )
+        if (!hasProposal) {
+            Icon(
+                imageVector = Icons.Rounded.EditCalendar,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = Ink,
+            )
+        } else {
+            Image(
+                painter = painterResource(id = getAvatarResourceByDays(friendDaysSinceLast)),
+                contentDescription = null,
+                modifier = Modifier.size(54.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop,
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 6.dp)
+                    .background(Yellow, RoundedCornerShape(8.dp))
+                    .border(1.dp, SoftLine, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = friendName.take(2),
+                    color = Ink,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+        }
     }
 }
 

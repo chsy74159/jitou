@@ -1,9 +1,18 @@
 package com.jitou.app.ui.home
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -26,9 +35,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,4 +268,95 @@ private fun ReminderTimeChip(
         onClick = { onReminderChange(reminder.copy(time = time)) },
         label = { Text("$label ${time.toReminderText()}") },
     )
+}
+
+@Composable
+internal fun HaircutCheckinDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "打卡今日剪头",
+                color = Ink,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.sp,
+            )
+        },
+        text = {
+            Text(
+                text = "长按下方按钮两秒完成打卡",
+                color = MutedInk,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        confirmButton = {
+            LongPressCheckinButton(onComplete = onConfirm)
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", fontWeight = FontWeight.Bold)
+            }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = Surface,
+    )
+}
+
+@Composable
+private fun LongPressCheckinButton(onComplete: () -> Unit) {
+    val progress = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    var isComplete by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .background(WarmPanel, RoundedCornerShape(24.dp))
+            .border(1.dp, SoftLine, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        if (isComplete) return@detectTapGestures
+                        val job = scope.launch {
+                            progress.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = 2000, easing = LinearEasing)
+                            )
+                            if (progress.value == 1f) {
+                                isComplete = true
+                                onComplete()
+                            }
+                        }
+                        tryAwaitRelease()
+                        job.cancel()
+                        if (!isComplete) {
+                            scope.launch {
+                                progress.animateTo(0f, tween(300))
+                            }
+                        }
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.value)
+                .fillMaxHeight()
+                .background(Yellow)
+                .align(Alignment.CenterStart)
+        )
+        Text(
+            text = if (isComplete) "已完成！" else "长按剪头",
+            color = Ink,
+            fontWeight = FontWeight.Black,
+            fontSize = 16.sp,
+            letterSpacing = 0.sp
+        )
+    }
 }

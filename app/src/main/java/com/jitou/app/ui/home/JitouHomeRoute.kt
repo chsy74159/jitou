@@ -72,6 +72,7 @@ fun JitouHomeRoute(
         derivedStateOf { JitouScreen.fromPageIndex(navPosition.roundToInt()) }
     }
     var showRecordDialog by remember { mutableStateOf(false) }
+    var showCheckinDialog by remember { mutableStateOf(false) }
     var recordDialogPastDatesOnly by remember { mutableStateOf(false) }
     var showReminderSheet by remember { mutableStateOf(false) }
     var showJoinQueueDialog by remember { mutableStateOf(false) }
@@ -81,6 +82,7 @@ fun JitouHomeRoute(
             pagerState.animateScrollToPage(destination.pageIndex)
         }
     }
+    val friendDaysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records)
 
     BackHandler(enabled = screen.systemBackTarget() != null) {
         screen.systemBackTarget()?.let(navigateToScreen)
@@ -98,9 +100,9 @@ fun JitouHomeRoute(
                         proposal = proposal,
                         isQueueing = isQueueing,
                         friendName = friendName,
+                        friendDaysSinceLast = friendDaysSinceLast,
                         onRecordClick = {
-                            recordDialogPastDatesOnly = false
-                            showRecordDialog = true
+                            showCheckinDialog = true
                         },
                         onAppointmentClick = { navigateToScreen(JitouScreen.Appointment) },
                         onProfileClick = { navigateToScreen(JitouScreen.Profile) },
@@ -119,7 +121,7 @@ fun JitouHomeRoute(
                         proposal = proposal,
                         historyItems = appointmentHistory,
                         averageIntervalDays = HaircutAnalytics.calculate(records).averageIntervalDays,
-                        friendDaysSinceLast = HaircutAnalytics.daysSinceLastHaircut(records) ?: 0,
+                        friendDaysSinceLast = friendDaysSinceLast ?: 0,
                         friendName = friendName,
                         isFriendQueueing = QueueState.shouldShowFriendQueueNotice(isQueueing, proposal?.status),
                         onBack = { navigateToScreen(JitouScreen.Home) },
@@ -178,6 +180,16 @@ fun JitouHomeRoute(
                 showRecordDialog = false
                 recordDialogPastDatesOnly = false
             },
+        )
+    }
+
+    if (showCheckinDialog) {
+        HaircutCheckinDialog(
+            onDismiss = { showCheckinDialog = false },
+            onConfirm = {
+                viewModel.addHaircutRecord(java.time.LocalDate.now())
+                showCheckinDialog = false
+            }
         )
     }
 

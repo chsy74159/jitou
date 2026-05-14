@@ -37,6 +37,7 @@ internal fun JitouHomeScreen(
     onAppointmentClick: () -> Unit,
     onProfileClick: () -> Unit,
     onQueueClick: () -> Unit,
+    friendDaysSinceLast: Int?,
 ) {
     val today = LocalDate.now()
     val sortedRecords = records.sortedByDescending { it.date }
@@ -58,7 +59,7 @@ internal fun JitouHomeScreen(
                 .padding(horizontal = 18.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            HomeTopBar(onProfileClick = onProfileClick)
+            HomeTopBar(onProfileClick = onProfileClick, daysSinceLast = daysSinceLast)
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -89,6 +90,7 @@ internal fun JitouHomeScreen(
             CoopPanel(
                 proposal = proposal,
                 friendName = friendName,
+                friendDaysSinceLast = friendDaysSinceLast,
                 showFriendQueueNotice = QueueState.shouldShowFriendQueueNotice(isQueueing, proposal?.status),
                 onClick = onAppointmentClick,
             )
@@ -113,6 +115,7 @@ private fun JitouHomePreview() {
             ),
             isQueueing = false,
             friendName = "阿杰",
+            friendDaysSinceLast = 15,
             onRecordClick = {},
             onAppointmentClick = {},
             onProfileClick = {},
