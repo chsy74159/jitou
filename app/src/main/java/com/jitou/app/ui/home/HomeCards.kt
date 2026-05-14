@@ -23,8 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -40,17 +38,17 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jitou.app.R
 import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.QueueState
-import com.jitou.app.model.ReminderUiState
 import java.time.LocalDate
 
 internal const val SpeechBubbleTailAnchorFraction = 0.24f
-internal const val SpeechBubbleTailDepthPx = 18f
+internal const val SpeechBubbleTailDepthPx = 12f
 
 private val SpeechBubbleShape = GenericShape { size, _ ->
     val tailDepth = SpeechBubbleTailDepthPx.coerceAtMost(size.height * 0.28f)
@@ -169,8 +167,7 @@ internal fun hairIllustrationImageRes(imageRes: Int, darkImageRes: Int, backgrou
 internal fun HairIllustrationHero(
     daysSinceLast: Int?,
     status: String,
-    reminder: ReminderUiState,
-    onReminderClick: () -> Unit,
+    todayDate: LocalDate,
 ) {
     val illustration = hairIllustrationState(daysSinceLast, status)
     val imageRes = hairIllustrationImageRes(illustration.imageRes, illustration.darkImageRes, HomeBackground)
@@ -194,7 +191,8 @@ internal fun HairIllustrationHero(
             text = illustration.bubbleText,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 10.dp, end = 2.dp),
+                .offset(y = (-6).dp)
+                .padding(end = 2.dp),
         )
         DaysSticker(
             daysText = illustration.daysText,
@@ -202,12 +200,11 @@ internal fun HairIllustrationHero(
                 .align(Alignment.TopStart)
                 .offset(x = 6.dp, y = 118.dp),
         )
-        ReminderChip(
-            reminder = reminder,
-            onReminderClick = onReminderClick,
+        TodayLine(
+            text = todayLineText(todayDate),
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 2.dp, bottom = 2.dp),
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 4.dp),
         )
     }
 }
@@ -221,15 +218,15 @@ private fun StatusSpeechBubble(
         modifier = modifier
             .background(Surface, SpeechBubbleShape)
             .border(width = 1.dp, color = Ink, shape = SpeechBubbleShape)
-            .padding(start = 15.dp, top = 9.dp, end = 15.dp, bottom = 20.dp),
+            .padding(start = 13.dp, top = 6.dp, end = 13.dp, bottom = 14.dp),
     ) {
         Text(
             text = text,
             color = Ink,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 0.sp,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
@@ -266,37 +263,21 @@ private fun DaysSticker(
 }
 
 @Composable
-private fun ReminderChip(
-    reminder: ReminderUiState,
-    onReminderClick: () -> Unit,
+private fun TodayLine(
+    text: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .height(36.dp)
-            .background(WarmPanel, RoundedCornerShape(18.dp))
-            .border(width = 1.dp, color = SoftLine, shape = RoundedCornerShape(18.dp))
-            .clickable(onClick = onReminderClick)
-            .padding(start = 10.dp, end = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = if (reminder.enabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsOff,
-            contentDescription = null,
-            modifier = Modifier.size(17.dp),
-            tint = Ink,
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = if (reminder.enabled) "提醒 ${reminder.time.toReminderText()}" else "提醒关闭",
-            color = Ink,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 0.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    Text(
+        text = text,
+        modifier = modifier.fillMaxWidth(),
+        color = MutedInk,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.sp,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable

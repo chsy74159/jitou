@@ -96,7 +96,6 @@ fun JitouHomeRoute(
                     JitouHomeScreen(
                         records = records,
                         proposal = proposal,
-                        reminder = reminder,
                         isQueueing = isQueueing,
                         friendName = friendName,
                         onRecordClick = {
@@ -112,7 +111,6 @@ fun JitouHomeRoute(
                                 showJoinQueueDialog = true
                             }
                         },
-                        onReminderClick = { showReminderSheet = true },
                     )
                 }
 

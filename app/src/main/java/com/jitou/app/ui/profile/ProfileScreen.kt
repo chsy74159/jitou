@@ -202,7 +202,7 @@ private fun ProfileThemeMenu(
                 imageVector = Icons.Rounded.Palette,
                 contentDescription = "主题设置",
                 tint = ProfileAccentStrong,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(22.dp),
             )
         }
         DropdownMenu(
@@ -270,7 +270,7 @@ private fun UserInfoCard(
                 modifier = Modifier
                     .size(96.dp)
                     .border(2.dp, ProfileAvatarLine, CircleShape)
-                    .padding(2.dp),
+                    .padding(1.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(

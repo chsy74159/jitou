@@ -22,9 +22,7 @@ import com.jitou.app.model.HaircutProposal
 import com.jitou.app.model.HaircutRecord
 import com.jitou.app.model.ProposalStatus
 import com.jitou.app.model.QueueState
-import com.jitou.app.model.ReminderUiState
 import com.jitou.app.model.fakeHaircutRecords
-import com.jitou.app.model.fakeReminderState
 import com.jitou.app.ui.theme.JitouTheme
 import java.time.LocalDate
 import java.time.LocalTime
@@ -33,14 +31,12 @@ import java.time.LocalTime
 internal fun JitouHomeScreen(
     records: List<HaircutRecord>,
     proposal: HaircutProposal?,
-    reminder: ReminderUiState,
     isQueueing: Boolean,
     friendName: String,
     onRecordClick: () -> Unit,
     onAppointmentClick: () -> Unit,
     onProfileClick: () -> Unit,
     onQueueClick: () -> Unit,
-    onReminderClick: () -> Unit,
 ) {
     val today = LocalDate.now()
     val sortedRecords = records.sortedByDescending { it.date }
@@ -69,8 +65,7 @@ internal fun JitouHomeScreen(
             HairIllustrationHero(
                 daysSinceLast = daysSinceLast,
                 status = status,
-                reminder = reminder,
-                onReminderClick = onReminderClick,
+                todayDate = today,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -116,14 +111,12 @@ private fun JitouHomePreview() {
                 proposerName = "XX",
                 status = ProposalStatus.Confirmed,
             ),
-            reminder = fakeReminderState(),
             isQueueing = false,
             friendName = "阿杰",
             onRecordClick = {},
             onAppointmentClick = {},
             onProfileClick = {},
             onQueueClick = {},
-            onReminderClick = {},
         )
     }
 }

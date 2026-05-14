@@ -46,6 +46,8 @@ internal fun haircutStatus(daysSinceLast: Int, averageIntervalDays: Int): String
     else -> "还撑得住"
 }
 
+internal fun todayLineText(date: LocalDate): String = "今天是${date.format(DateFormatter)}"
+
 internal fun LocalTime.toReminderText(): String = "%02d:%02d".format(hour, minute)
 
 internal fun LocalDate.toPickerMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()

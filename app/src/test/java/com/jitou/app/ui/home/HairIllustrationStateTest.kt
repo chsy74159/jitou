@@ -2,6 +2,7 @@ package com.jitou.app.ui.home
 
 import androidx.compose.ui.graphics.Color
 import com.jitou.app.R
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -67,6 +68,11 @@ class HairIllustrationStateTest {
     @Test
     fun speechBubbleTailStaysNearLeftSideAcrossTextWidths() {
         assertEquals(0.24f, SpeechBubbleTailAnchorFraction)
-        assertEquals(18f, SpeechBubbleTailDepthPx)
+        assertEquals(12f, SpeechBubbleTailDepthPx)
+    }
+
+    @Test
+    fun todayLineUsesHomeDateFormat() {
+        assertEquals("今天是2026.05.14", todayLineText(LocalDate.of(2026, 5, 14)))
     }
 }
