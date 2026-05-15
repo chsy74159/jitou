@@ -1,4 +1,4 @@
-.svg/
+svg/
 .superpowers/
 .docs/
 # Gradle / build
@@ -19,6 +19,7 @@ local.properties
 # Android outputs
 captures/
 outputs/
+app/release/
 *.apk
 *.ap_
 *.aab
@@ -26,6 +27,8 @@ outputs/
 # Signing / secrets
 *.jks
 *.keystore
+key
+key/
 keystore.properties
 .env
 .env.*

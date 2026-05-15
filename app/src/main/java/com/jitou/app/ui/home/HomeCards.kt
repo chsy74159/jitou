@@ -236,7 +236,7 @@ private fun StatusSpeechBubble(
         modifier = modifier
             .background(Surface, SpeechBubbleShape)
             .border(width = 1.dp, color = Ink, shape = SpeechBubbleShape)
-            .padding(start = 13.dp, top = 6.dp, end = 13.dp, bottom = 14.dp),
+            .padding(start = 13.dp, top = 6.dp, end = 13.dp, bottom = 8.dp),
     ) {
         Text(
             text = text,
